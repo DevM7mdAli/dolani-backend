@@ -87,7 +87,10 @@ enum DeptType {
   LABS1
   LABS2
   LABS3
+  LABS4
   ADMINISTRATION
+  STUDENT_AFFAIRS
+  GENERAL
 }
 
 // ============================================================================
@@ -131,6 +134,13 @@ enum LocationType {
   EXIT
   ELEVATOR
   MAIN_HALL
+  RESTROOM
+  STAIRS
+  SERVICE
+  PRAYER_ROOM
+  SERVER_ROOM
+  STORE_ROOM
+  LOCKERS
 }
 
 model Path {
