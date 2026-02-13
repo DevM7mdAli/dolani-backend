@@ -17,7 +17,8 @@ model User {
   password_hash String
   name          String
   phoneNumber   String?    @unique
-  role          Role       @default(STUDENT)
+  role          Role       @default(FACULTY)
+  refresh_token String?    // hashed refresh token
 
   professor     Professor?
   createdAt     DateTime   @default(now())
@@ -29,7 +30,6 @@ model User {
 enum Role {
   ADMIN
   FACULTY
-  STUDENT
 }
 
 // ============================================================================
