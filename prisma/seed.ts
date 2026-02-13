@@ -1,5 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { DeptType, LocationType, PrismaClient, Role } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { Pool } from 'pg';
 
 // 1. Create a connection pool using your env variable
@@ -638,13 +639,16 @@ async function main() {
       }
 
       const username = email.split('@')[0];
+      const hashedPassword = await bcrypt.hash('12345678', 10);
 
       try {
-        const user = await prisma.user.create({
-          data: {
+        const user = await prisma.user.upsert({
+          where: { email: email },
+          update: {},
+          create: {
             email: email,
             username: username,
-            password_hash: 'hashed123', // Default
+            password_hash: hashedPassword,
             name: room.doctor,
             role: Role.FACULTY,
           },
@@ -668,11 +672,14 @@ async function main() {
   }
 
   // Create an Admin user as well
-  await prisma.user.create({
-    data: {
+  const adminHash = await bcrypt.hash('admin123', 10);
+  await prisma.user.upsert({
+    where: { email: 'admin@iau.edu.sa' },
+    update: {},
+    create: {
       email: 'admin@iau.edu.sa',
       username: 'admin',
-      password_hash: 'admin123',
+      password_hash: adminHash,
       name: 'System Admin',
       role: Role.ADMIN,
     },
