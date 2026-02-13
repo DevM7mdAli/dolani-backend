@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { User } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -26,7 +26,7 @@ export class UsersService {
     return user;
   }
 
-  async create(dto: CreateUserDto): Promise<User> {
+  async createFaculty(dto: CreateUserDto): Promise<User> {
     const existingEmail = await this.findByEmail(dto.email);
     if (existingEmail) {
       throw new ConflictException('Email already in use');
@@ -46,7 +46,14 @@ export class UsersService {
         password_hash,
         name: dto.name,
         phoneNumber: dto.phoneNumber,
+        role: Role.FACULTY,
       },
+    });
+  }
+
+  async findAllFaculty(): Promise<User[]> {
+    return this.prisma.user.findMany({
+      where: { role: Role.FACULTY },
     });
   }
 
