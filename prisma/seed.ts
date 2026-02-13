@@ -1,7 +1,15 @@
-/* eslint-disable no-console */
+import { PrismaPg } from '@prisma/adapter-pg';
 import { DeptType, LocationType, PrismaClient, Role } from '@prisma/client';
+import { Pool } from 'pg';
 
-const prisma = new PrismaClient();
+// 1. Create a connection pool using your env variable
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+// 2. Create the Prisma Adapter
+const adapter = new PrismaPg(pool);
+
+// 3. Initialize Prisma with the adapter
+const prisma = new PrismaClient({ adapter });
 
 const rawRooms = [
   //* doctors in COE Finished Fill
@@ -600,8 +608,15 @@ async function main() {
 
     // Create Location
     // Since coordinates are unknown, we use dummy values or random scatter for visualization
-    const location = await prisma.location.create({
-      data: {
+    const location = await prisma.location.upsert({
+      where: {
+        floor_id_room_number: {
+          floor_id: floorId,
+          room_number: room.roomNumber,
+        },
+      },
+      update: {},
+      create: {
         name: room.type || `Office ${room.roomNumber}`,
         room_number: room.roomNumber,
         type: type,
