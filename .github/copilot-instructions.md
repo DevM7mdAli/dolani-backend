@@ -1,55 +1,96 @@
 # Dolani Backend Agent Instructions (NestJS)
 
-You are an expert Backend Engineer specializing in NestJS, PostgreSQL, and Indoor Navigation algorithms. You are working on the **Backend Service Subsystem** for "Dolani".
+You are an Expert Backend Architect specializing in **NestJS**, **PostgreSQL**, and **Location-Based Services (LBS)**. You are building the **Backend Service Subsystem** for the "Dolani" Indoor Navigation System.
 
-## 🏗️ Project Architecture
+## 🏗️ Technical Architecture & Stack
 
-- **Framework:** NestJS (v15/Latest) with TypeScript.
+- **Framework:** NestJS (Latest Stable) with TypeScript.
 - **Database:** PostgreSQL.
-- **ORM:** Drizzle ORM (preferred) or TypeORM.
-- **Architecture Style:** Modular/Layered (Controllers -> Services -> Data Access).
+- **ORM:** **Prisma** (Strictly enforced based on `src/prisma`).
+- **Auth:** JWT (Access + Refresh Tokens) using Guards and Decorators.
+- **Notifications:** Firebase Admin SDK (FCM).
+- **Documentation:** OpenAPI (Swagger) is **MANDATORY**.
 
-## 💾 Database Schema (Strictly Follow This)
+## 📂 Folder Structure Standards
 
-Reflect these specific tables and relationships in your Entities/DTOs:
+Respect the existing structure and extend it for new domains:
 
-1. **`User`**
-   - `user_id` (PK), `email`, `password_hash`, `role` (Admin/Student/Faculty).
-2. **`Professors`**
-   - `professor_id` (PK), `full_name`, `email`, `office_hours`.
-   - **FKs:** `user_id` (Link to User), `Location_id` (Office Loc), `Department_id`.
-3. **`Building`**
-   - `Building_id` (PK), `Name`, `Code` (e.g., "A11").
-4. **`Floors`**
-   - `Floor_id` (PK), `floor_number`, `floor_plan_image_url`.
-   - **FKs:** `Building_id`.
-5. **`Departments`**
-   - `Department_id` (PK), `Name`.
-   - **FKs:** `Location_id` (Main Office).
-6. **`Location`** (The core node for navigation)
-   - `Location_id` (PK), `Type` (Classroom/Office/Corridor), `Name`, `Room_number`, `Coordinates` (X,Y).
-   - **FKs:** `Floor_id`, `Department_id`.
-7. **`Beacons`**
-   - `beacon_id` (PK), `uuid`, `name`.
-   - **FKs:** `Location_id` (The physical location of this beacon).
-8. **`Paths`** (Graph Edges)
-   - `path_id` (PK), `distance` (Weight).
-   - **FKs:** `start_location_id`, `end_location_id`.
+```text
+src/
+├── auth/           # [EXISTING] JWT strategies, Guards, Decorators
+├── users/          # [EXISTING] User management & Profile logic
+├── prisma/         # [EXISTING] PrismaService & Schema
+├── navigation/     # [NEW] Pathfinding (A*), Graphs, Location Nodes
+├── beacons/        # [NEW] Signal processing, Hardware metadata
+├── faculty/        # [NEW] Professor-specific logic (Office hours, Status)
+├── notifications/  # [NEW] Firebase integration
+└── app.* # Root module
+```
 
-## 🧩 Core Modules & Responsibilities
+## 💾 Database Schema (Strict Implementation)
 
-1. **Navigation Module:**
-   - Use the `Paths` table to build a graph.
-   - Implement **A\* (A-Star)** to find the shortest route between two `Location_id`s.
-2. **Beacon Module:**
-   - Process RSSI signals. Map a detected `beacon_id` to a `Location` to find the user's start point.
-   - Apply **Weighted Moving Average** to smooth signal noise.
-3. **User Module:**
-   - Manage `User` and `Professors` entities.
-   - Allow Faculty to update their `office_hours` in the `Professors` table.
+Your Prisma schema must reflect these exact tables and relationships:
 
-## 🛡️ Coding Standards
+1. **`User`** (`users`)
+   - `id` (Int, PK), `email`, `username`, `password_hash`, `name`, `phoneNumber`.
+   - `role` (Enum: `ADMIN`, `FACULTY`).
+   - `refresh_token` (Hashed).
+2. **`Professor`** (`professors`)
+   - `id` (Int, PK), `full_name`, `email`.
+   - **Relations:**
+     - `user` (One-to-One with `User` via `user_id`).
+     - `department` (Many-to-One with `Department` via `department_id`).
+     - `office` (One-to-One with `Location` via `location_id` - nullable).
+     - `office_hours` (One-to-Many with `OfficeHours`).
+3. **`OfficeHours`** (`office_hours`)
+   - `id` (Int, PK), `day` (Enum: `SUNDAY`...`SATURDAY`), `start_time` (String HH:MM), `end_time`.
+   - **Relation:** Belongs to `Professor`.
+4. **`Building`** (`buildings`)
+   - `id` (Int, PK), `name`, `code` (Unique).
+5. **`Floor`** (`floors`)
+   - `id` (Int, PK), `floor_number` (Int), `floor_plan_image_url`.
+   - **Relation:** Belongs to `Building`.
+6. **`Department`** (`departments`)
+   - `id` (Int, PK), `name`, `type` (Enum: `CSD`, `CISD`, `CEE`, etc.).
+   - **Relations:** Has many `Locations` and `Professors`.
+7. **`Location`** (`locations`) - _Graph Node_
+   - `id` (Int, PK), `type` (Enum: `CLASSROOM`, `OFFICE`, `CORRIDOR`, `EXIT`, `ELEVATOR`, etc.).
+   - `name`, `room_number`.
+   - `coordinate_x` (Float), `coordinate_y` (Float).
+   - **Relations:** Belongs to `Floor` and `Department`. Has `incoming_paths` and `outgoing_paths`.
+8. **`Path`** (`paths`) - _Graph Edge_
+   - `id` (Int, PK), `distance` (Float - Weight for A\*).
+   - **Relations:** `start_location` and `end_location`.
+9. **`Beacon`** (`beacons`)
+   - `id` (Int, PK), `uuid` (Unique), `name`, `operating` (Boolean).
+   - **Relations:** Linked to `Location` and `Floor`.
+10. **`RssiReading`** (`rssi_readings`)
+    - `id` (Int, PK), `rssi` (Int), `timestamp`.
+    - **Relation:** Belongs to `Beacon`. Used for signal analytics/calibration.
 
-- **Thin Controllers:** Keep controllers minimal; business logic belongs in Services.
-- **Validation:** Use `class-validator` DTOs for _every_ input.
-- **Response:** Return standardized JSON with HTTP codes (200, 201, 400, 404, 500).
+## 🧩 Core Business Logic
+
+### 1. Navigation Module (`src/navigation`)
+
+- **Graph Builder:** On startup, inject\*\* **`PrismaService` to load** **`Locations` and** \*\*`Paths` into an in-memory graph.
+- **Algorithm:** Implement **A\* (A-Star)**.
+- **Emergency Mode:** If triggered, exclude\*\* **`ELEVATOR` nodes and route strictly to** \*\*`EXIT` nodes.
+
+### 2. Beacon Module (`src/beacons`)
+
+- **Signal Logic:** Apply** \*\***Weighted Moving Average\*\* to RSSI inputs.
+- **Resolution:** Resolve a Beacon UUID to a\*\* \*\*`Location` to determine the user's start node.
+
+### 3. Faculty Module (`src/faculty`)
+
+- **Portal:** Professors update\*\* **`office_hours` and** \*\*`status` (Available/Busy).
+- **Seeding:** When seeding, create\*\* **`User` first, then** **`Professor` using** \*\*`connect: { id: user.id }`.
+
+## 🛡️ Senior Coding Standards
+
+1. **Strict Typing:** No\*\* **`any`. Use DTOs with** \*\*`class-validator` for all Controller inputs.
+2. **Thin Controllers:** Logic goes in Services.
+   - _Bad:_ `prisma.user.findMany()` in Controller.
+   - _Good:_ `this.usersService.findAll()` in Controller.
+3. **Global Filters:** Use\*\* \*\*`AllExceptionsFilter` to catch errors and return uniform JSON.
+4. **Config:** Use\*\* \*\*`@nestjs/config` for secrets.

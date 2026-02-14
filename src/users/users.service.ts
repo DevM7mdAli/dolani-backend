@@ -26,7 +26,7 @@ export class UsersService {
     return user;
   }
 
-  async createFaculty(dto: CreateUserDto): Promise<User> {
+  async createFaculty(dto: CreateUserDto) {
     const existingEmail = await this.findByEmail(dto.email);
     if (existingEmail) {
       throw new ConflictException('Email already in use');
@@ -48,12 +48,14 @@ export class UsersService {
         phoneNumber: dto.phoneNumber,
         role: Role.FACULTY,
       },
+      omit: { password_hash: true, refresh_token: true },
     });
   }
 
-  async findAllFaculty(): Promise<User[]> {
+  async findAllFaculty() {
     return this.prisma.user.findMany({
       where: { role: Role.FACULTY },
+      omit: { password_hash: true, refresh_token: true },
     });
   }
 

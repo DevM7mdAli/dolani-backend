@@ -199,10 +199,17 @@ model RssiReading {
 // FACULTY & OFFICE HOURS
 // ============================================================================
 
+enum ProfessorStatus {
+  AVAILABLE
+  BUSY
+  ON_LEAVE
+}
+
 model Professor {
-  id        Int     @id @default(autoincrement())
+  id        Int             @id @default(autoincrement())
   full_name String
-  email     String  @unique
+  email     String          @unique
+  status    ProfessorStatus @default(AVAILABLE)
 
   user_id       Int  @unique
   location_id   Int?
