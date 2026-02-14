@@ -1,98 +1,181 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 📍 Dolani - Indoor Navigation Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+> **Advanced Indoor Positioning & Navigation System for University Campuses**
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+**Dolani** is a robust backend service engineered with **NestJS** and **TypeScript** to power an indoor navigation solution for the CCSIT building. It leverages **BLE Beacons** for real-time positioning and implements the **A\* (A-Star)** algorithm for optimal pathfinding, guiding students and faculty to classrooms, offices, and facilities.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🚀 Key Features
 
-## Project setup
+- **Map Digitization**: Graph-based representation of buildings, floors, and rooms.
+- **Pathfinding Engine**: A\* algorithm to calculate the shortest path between any two locations.
+- **BLE Positioning**: Resolves user location via Bluetooth Low Energy (BLE) beacons and RSSI smoothing.
+- **Faculty Portal**: Professors can manage office hours and update their availability status in real-time.
+- **Admin Dashboard**: Full CRUD capabilities for managing building layouts, beacons, and users.
+- **Secure Authentication**: Role-based access control (RBAC) using JWT access and refresh tokens.
+- **API Documentation**: Interactive Swagger UI for all endpoints.
 
-```bash
-$ npm install
-```
+---
 
-## Compile and run the project
+## 🛠 Tech Stack
 
-```bash
-# development
-$ npm run start
+- **Framework**: [NestJS](https://nestjs.com/) (v11) - Progressive Node.js framework.
+- **Language**: [TypeScript](https://www.typescriptlang.org/) (v5.7) - Strictly typed JavaScript.
+- **Database**: [PostgreSQL](https://www.postgresql.org/) - Relational database system.
+- **ORM**: [Prisma](https://www.prisma.io/) (v6) - Next-generation Node.js and TypeScript ORM.
+- **Package Manager**: [pnpm](https://pnpm.io/) - Fast, disk space efficient package manager.
+- **Documentation**: [Swagger / OpenAPI](https://swagger.io/) - API description format.
 
-# watch mode
-$ npm run start:dev
+---
 
-# production mode
-$ npm run start:prod
-```
+## 📋 Prerequisites
 
-## Run tests
+Before you begin, ensure you have the following installed on your machine:
 
-```bash
-# unit tests
-$ npm run test
+- **Node.js** (v18 or later)
+- **pnpm** (v8 or later) - _Install via `npm i -g pnpm`_
+- **PostgreSQL** (v14 or later) - Local or cloud instance.
+- **Git**
 
-# e2e tests
-$ npm run test:e2e
+---
 
-# test coverage
-$ npm run test:cov
-```
+## ⚙️ Installation & Setup
 
-## Deployment
+Follow these steps to get the project running locally.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 1. Clone the Repository
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+git clone https://github.com/DevM7mdAli/dolani-backend.git
+cd dolani-backend
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 2. Install Dependencies
 
-## Resources
+Using **pnpm** is recommended for faster installation.
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+pnpm install
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### 3. Environment Configuration
 
-## Support
+Create a `.env` file in the root directory by copying the example file.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+cp .env.example .env
+```
 
-## Stay in touch
+Open `.env` and configure your database connection string and secrets:
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```dotenv
+# .env
+DATABASE_URL="postgresql://user:password@localhost:5432/dolani_dev"
+PORT=8000
+JWT_SECRET="your-secure-random-string"
+JWT_REFRESH_SECRET="your-secure-random-refresh-string"
+```
 
-## License
+### 4. Database Migration & Seeding
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Ensure your PostgreSQL server is running and the database (e.g., `dolani_dev`) exists. Then, run the migrations to create the schema:
+
+```bash
+pnpm prisma migrate dev --name init
+```
+
+Populate the database with initial building data (CCSIT layout, rooms, users):
+
+```bash
+pnpm prisma db seed
+```
+
+---
+
+## 🏃‍♂️ Running the Application
+
+### Development Mode
+
+Runs the application with hot-reload enabled.
+
+```bash
+pnpm start:dev
+```
+
+_Server will start at `http://localhost:8000`._
+
+### Production Mode
+
+Builds the project and runs the optimized production build.
+
+```bash
+pnpm build
+pnpm start:prod
+```
+
+---
+
+## 📚 API Documentation
+
+Once the server is running, you can access the interactive **Swagger UI** to explore and test the API endpoints.
+
+- **URL**: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
+- **Format**: OpenAPI 3.0
+
+### Core Endpoints Overview
+
+| Module      | Method | Endpoint                    | Description                                  | Auth Required |
+| :---------- | :----- | :-------------------------- | :------------------------------------------- | :------------ |
+| **Auth**    | POST   | `/api/auth/login`           | User login (returns access + refresh tokens) | ❌ No         |
+| **Nav**     | POST   | `/api/navigation/route`     | Calculate optimal path (A\*)                 | ❌ No         |
+| **Nav**     | GET    | `/api/navigation/locations` | List all navigable locations                 | ❌ No         |
+| **Beacons** | POST   | `/api/beacons/resolve`      | Resolve Beacon UUID to Location              | ❌ No         |
+| **Faculty** | GET    | `/api/faculty`              | List professors & office hours               | ❌ No         |
+| **Admin**   | POST   | `/api/admin/buildings`      | Create new building                          | ✅ Admin      |
+
+---
+
+## 🧪 Testing
+
+Run the test suite to ensure system stability.
+
+```bash
+# Unit tests
+pnpm test
+
+# End-to-end tests
+pnpm test:e2e
+
+# Test coverage
+pnpm test:cov
+```
+
+---
+
+## 📂 Project Structure
+
+```text
+src/
+├── admin/          # AC: Building, Floor, Dept management (Admin Only)
+├── auth/           # Authentication strategies (JWT), Guards, Decorators
+├── beacons/        # BLE signal processing & location resolution
+├── common/         # Global filters, interceptors, and pipes
+├── faculty/        # Professor profiles & office hours management
+├── navigation/     # A* Pathfinding Engine & Graph Logic
+├── navigation/dto/ # Standardized request objects (e.g., NavigateDto)
+├── prisma/         # Database service & connection logic
+├── users/          # User management layer
+├── app.module.ts   # Root application module
+└── main.ts         # Application entry point
+```
+
+---
+
+## 🤝 Contribution
+
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feature/awesome-feature`.
+3. Commit your changes: `git commit -m 'Add awesome feature'`.
+4. Push to the branch: `git push origin feature/awesome-feature`.
+5. Open a Pull Request.
