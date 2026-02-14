@@ -1,0 +1,254 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// AUTHENTICATION & USERS
+// ============================================================================
+
+model User {
+  id            Int        @id @default(autoincrement())
+  email         String     @unique
+  username      String     @unique
+  password_hash String
+  name          String
+  phoneNumber   String?    @unique
+  role          Role       @default(FACULTY)
+  refresh_token String?    // hashed refresh token
+
+  professor     Professor?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  FACULTY
+}
+
+// ============================================================================
+// BUILDING INFRASTRUCTURE
+// ============================================================================
+
+model Building {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  code      String   @unique // e.g., "A11"
+
+  floors    Floor[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("buildings")
+}
+
+model Floor {
+  id                   Int        @id @default(autoincrement())
+  floor_number         Int
+  floor_plan_image_url String?
+  building_id          Int
+
+  building  Building   @relation(fields: [building_id], references: [id], onDelete: Cascade)
+  locations Location[]
+  beacons   Beacon[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([building_id, floor_number])
+  @@map("floors")
+}
+
+model Department {
+  id   Int      @id @default(autoincrement())
+  name String   @unique
+  type DeptType
+
+  locations  Location[]
+  professors Professor[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("departments")
+}
+
+enum DeptType {
+  CSD
+  CISD
+  CEE
+  CNCO
+  LABS1
+  LABS2
+  LABS3
+  LABS4
+  ADMINISTRATION
+  STUDENT_AFFAIRS
+  GENERAL
+}
+
+// ============================================================================
+// LOCATIONS & NAVIGATION
+// ============================================================================
+
+model Location {
+  id           Int          @id @default(autoincrement())
+  type         LocationType
+  name         String
+  room_number  String?
+
+  coordinate_x Float
+  coordinate_y Float
+
+  floor_id      Int
+  department_id Int?
+
+  floor      Floor       @relation(fields: [floor_id], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [department_id], references: [id])
+
+  beacons        Beacon[]
+  outgoing_paths Path[]     @relation("start_location")
+  incoming_paths Path[]     @relation("end_location")
+  professors     Professor[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([floor_id, room_number])
+  @@map("locations")
+}
+
+enum LocationType {
+  CLASSROOM
+  OFFICE
+  CORRIDOR
+  LAB
+  THEATER
+  CONFERENCE
+  EXIT
+  ELEVATOR
+  MAIN_HALL
+  RESTROOM
+  STAIRS
+  SERVICE
+  PRAYER_ROOM
+  SERVER_ROOM
+  STORE_ROOM
+  LOCKERS
+}
+
+model Path {
+  id                Int   @id @default(autoincrement())
+  start_location_id Int
+  end_location_id   Int
+  distance          Float // Weight for A* algorithm
+
+  start_location Location @relation("start_location", fields: [start_location_id], references: [id], onDelete: Cascade)
+  end_location   Location @relation("end_location", fields: [end_location_id], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([start_location_id, end_location_id])
+  @@map("paths")
+}
+
+// ============================================================================
+// BEACONS (BLE POSITIONING)
+// ============================================================================
+
+model Beacon {
+  id        Int     @id @default(autoincrement())
+  uuid      String  @unique
+  name      String
+  operating Boolean @default(true)
+
+  location_id Int
+  floor_id    Int
+
+  location Location @relation(fields: [location_id], references: [id], onDelete: Cascade)
+  floor    Floor    @relation(fields: [floor_id], references: [id], onDelete: Cascade)
+
+  rssi_readings RssiReading[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("beacons")
+}
+
+model RssiReading {
+  id        Int      @id @default(autoincrement())
+  beacon_id Int
+  rssi      Int
+  timestamp DateTime @default(now())
+
+  beacon Beacon @relation(fields: [beacon_id], references: [id], onDelete: Cascade)
+
+  @@index([beacon_id, timestamp])
+  @@map("rssi_readings")
+}
+
+// ============================================================================
+// FACULTY & OFFICE HOURS
+// ============================================================================
+
+enum ProfessorStatus {
+  AVAILABLE
+  BUSY
+  ON_LEAVE
+}
+
+model Professor {
+  id        Int             @id @default(autoincrement())
+  full_name String
+  email     String          @unique
+  status    ProfessorStatus @default(AVAILABLE)
+
+  user_id       Int  @unique
+  location_id   Int?
+  department_id Int
+
+  user       User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  office     Location?   @relation(fields: [location_id], references: [id])
+  department Department  @relation(fields: [department_id], references: [id])
+
+  office_hours OfficeHours[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("professors")
+}
+
+model OfficeHours {
+  id           Int       @id @default(autoincrement())
+  professor_id Int
+  day          DayOfWeek
+  start_time   String    // HH:MM format
+  end_time     String    // HH:MM format
+
+  professor Professor @relation(fields: [professor_id], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([professor_id, day])
+  @@map("office_hours")
+}
+
+enum DayOfWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
