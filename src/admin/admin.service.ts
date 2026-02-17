@@ -1,5 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
+import { Prisma } from '@prisma/client';
+
+import { PaginatedResult, PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBeaconDto } from './dto/create-beacon.dto';
 import { CreateBuildingDto } from './dto/create-building.dto';
@@ -7,6 +10,11 @@ import { CreateDepartmentDto } from './dto/create-department.dto';
 import { CreateFloorDto } from './dto/create-floor.dto';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { CreatePathDto } from './dto/create-path.dto';
+import { UpdateBeaconDto } from './dto/update-beacon.dto';
+import { UpdateBuildingDto } from './dto/update-building.dto';
+import { UpdateDepartmentDto } from './dto/update-department.dto';
+import { UpdateFloorDto } from './dto/update-floor.dto';
+import { UpdateLocationDto } from './dto/update-location.dto';
 
 @Injectable()
 export class AdminService {
@@ -32,6 +40,11 @@ export class AdminService {
     });
     if (!building) throw new NotFoundException(`Building #${id} not found`);
     return building;
+  }
+
+  async updateBuilding(id: number, dto: UpdateBuildingDto) {
+    await this.findBuildingById(id);
+    return this.prisma.building.update({ where: { id }, data: dto });
   }
 
   async deleteBuilding(id: number) {
@@ -62,6 +75,15 @@ export class AdminService {
     return floor;
   }
 
+  async updateFloor(id: number, dto: UpdateFloorDto) {
+    await this.findFloorById(id);
+    return this.prisma.floor.update({
+      where: { id },
+      data: dto,
+      include: { building: true },
+    });
+  }
+
   async deleteFloor(id: number) {
     await this.findFloorById(id);
     return this.prisma.floor.delete({ where: { id } });
@@ -75,7 +97,7 @@ export class AdminService {
 
   async findAllDepartments() {
     return this.prisma.department.findMany({
-      include: { _count: { select: { professors: true, locations: true } } },
+      include: { _count: { select: { professors: true, locations: true, beacons: true } } },
       orderBy: { name: 'asc' },
     });
   }
@@ -83,10 +105,15 @@ export class AdminService {
   async findDepartmentById(id: number) {
     const dept = await this.prisma.department.findUnique({
       where: { id },
-      include: { professors: true, locations: true },
+      include: { professors: true, locations: true, beacons: true },
     });
     if (!dept) throw new NotFoundException(`Department #${id} not found`);
     return dept;
+  }
+
+  async updateDepartment(id: number, dto: UpdateDepartmentDto) {
+    await this.findDepartmentById(id);
+    return this.prisma.department.update({ where: { id }, data: dto });
   }
 
   async deleteDepartment(id: number) {
@@ -102,12 +129,36 @@ export class AdminService {
       .catch(this.handleUniqueError('Location room number on this floor'));
   }
 
-  async findAllLocations(floorId?: number) {
-    return this.prisma.location.findMany({
-      where: floorId ? { floor_id: floorId } : undefined,
-      include: { floor: true, department: true },
-      orderBy: { name: 'asc' },
-    });
+  async findAllLocations(query: PaginationQueryDto, floorId?: number) {
+    const { page = 1, limit = 20, search, sort, order = 'asc' } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.LocationWhereInput = {
+      ...(floorId ? { floor_id: floorId } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { room_number: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const orderBy: Prisma.LocationOrderByWithRelationInput = sort ? { [sort]: order } : { name: order };
+
+    const [data, total] = await Promise.all([
+      this.prisma.location.findMany({
+        where,
+        include: { floor: true, department: true },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      this.prisma.location.count({ where }),
+    ]);
+
+    return this.paginate(data, total, page, limit);
   }
 
   async findLocationById(id: number) {
@@ -119,7 +170,7 @@ export class AdminService {
     return loc;
   }
 
-  async updateLocation(id: number, dto: Partial<CreateLocationDto>) {
+  async updateLocation(id: number, dto: UpdateLocationDto) {
     await this.findLocationById(id);
     return this.prisma.location.update({
       where: { id },
@@ -144,10 +195,27 @@ export class AdminService {
       .catch(this.handleUniqueError('Path between these two locations'));
   }
 
-  async findAllPaths() {
-    return this.prisma.path.findMany({
-      include: { start_location: true, end_location: true },
-    });
+  async findAllPaths(query: PaginationQueryDto, fromLocationId?: number, toLocationId?: number) {
+    const { page = 1, limit = 20, order = 'asc' } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.PathWhereInput = {
+      ...(fromLocationId ? { start_location_id: fromLocationId } : {}),
+      ...(toLocationId ? { end_location_id: toLocationId } : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.path.findMany({
+        where,
+        include: { start_location: true, end_location: true },
+        orderBy: { distance: order },
+        skip,
+        take: limit,
+      }),
+      this.prisma.path.count({ where }),
+    ]);
+
+    return this.paginate(data, total, page, limit);
   }
 
   async deletePath(id: number) {
@@ -167,16 +235,50 @@ export class AdminService {
           operating: dto.operating ?? true,
           location_id: dto.location_id,
           floor_id: dto.floor_id,
+          department_id: dto.department_id,
         },
-        include: { location: true, floor: true },
+        include: { location: true, floor: true, department: true },
       })
       .catch(this.handleUniqueError('Beacon UUID'));
   }
 
-  async findAllBeacons() {
-    return this.prisma.beacon.findMany({
-      include: { location: true, floor: true },
-      orderBy: { name: 'asc' },
+  async findAllBeacons(query: PaginationQueryDto, locationId?: number) {
+    const { page = 1, limit = 20, search, order = 'asc' } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.BeaconWhereInput = {
+      ...(locationId ? { location_id: locationId } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { uuid: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.beacon.findMany({
+        where,
+        include: { location: true, floor: true, department: true },
+        orderBy: { name: order },
+        skip,
+        take: limit,
+      }),
+      this.prisma.beacon.count({ where }),
+    ]);
+
+    return this.paginate(data, total, page, limit);
+  }
+
+  async updateBeacon(id: number, dto: UpdateBeaconDto) {
+    const beacon = await this.prisma.beacon.findUnique({ where: { id } });
+    if (!beacon) throw new NotFoundException(`Beacon #${id} not found`);
+    return this.prisma.beacon.update({
+      where: { id },
+      data: dto,
+      include: { location: true, floor: true, department: true },
     });
   }
 
@@ -187,6 +289,18 @@ export class AdminService {
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────
+
+  private paginate<T>(data: T[], total: number, page: number, limit: number): PaginatedResult<T> {
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 
   private handleUniqueError(entity: string) {
     return (err: unknown) => {

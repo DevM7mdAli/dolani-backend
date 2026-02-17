@@ -1,12 +1,13 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { Role } from '@prisma/client';
+import { ProfessorStatus, Role } from '@prisma/client';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { UpdateOfficeHoursDto } from './dto/update-office-hours.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { FacultyService } from './faculty.service';
@@ -19,10 +20,16 @@ export class FacultyController {
   // ── Public endpoints ────────────────────────────────────────────────
 
   @Get()
-  @ApiOperation({ summary: 'List all professors with office hours' })
-  @ApiResponse({ status: 200, description: 'Returns all professors' })
-  findAll() {
-    return this.facultyService.findAll();
+  @ApiOperation({ summary: 'List professors with pagination and optional filters' })
+  @ApiQuery({ name: 'departmentId', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, enum: ProfessorStatus })
+  @ApiResponse({ status: 200, description: 'Paginated list of professors' })
+  findAll(
+    @Query() query: PaginationQueryDto,
+    @Query('departmentId') departmentId?: string,
+    @Query('status') status?: ProfessorStatus,
+  ) {
+    return this.facultyService.findAll(query, departmentId ? +departmentId : undefined, status);
   }
 
   @Get('search')
@@ -43,7 +50,7 @@ export class FacultyController {
 
   // ── Authenticated faculty endpoints ─────────────────────────────────
 
-  @Get('me/profile')
+  @Get('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.FACULTY)
   @ApiBearerAuth()
@@ -53,7 +60,7 @@ export class FacultyController {
     return this.facultyService.getProfile(user.sub);
   }
 
-  @Put('me/office-hours')
+  @Patch('office-hours')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.FACULTY)
   @ApiBearerAuth()
@@ -63,7 +70,7 @@ export class FacultyController {
     return this.facultyService.updateOfficeHours(user.sub, dto);
   }
 
-  @Put('me/status')
+  @Patch('status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.FACULTY)
   @ApiBearerAuth()
