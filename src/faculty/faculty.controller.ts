@@ -17,7 +17,7 @@ import { FacultyService } from './faculty.service';
 export class FacultyController {
   constructor(private readonly facultyService: FacultyService) {}
 
-  // ── Public endpoints ────────────────────────────────────────────────
+  // ── Public endpoints ─────────────────────────────────────────────────
 
   @Get()
   @ApiOperation({ summary: 'List professors with pagination and optional filters' })
@@ -40,15 +40,9 @@ export class FacultyController {
     return this.facultyService.search(query);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a professor by ID' })
-  @ApiResponse({ status: 200, description: 'Returns the professor' })
-  @ApiResponse({ status: 404, description: 'Professor not found' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.facultyService.findOne(id);
-  }
-
-  // ── Authenticated faculty endpoints ─────────────────────────────────
+  // ── Authenticated faculty endpoints ──────────────────────────────────
+  // NOTE: @Get('profile') must be declared before @Get(':id') so NestJS
+  // matches the static segment first — otherwise 'profile' is parsed as an id.
 
   @Get('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -78,5 +72,15 @@ export class FacultyController {
   @ApiResponse({ status: 200, description: 'Status updated' })
   updateStatus(@CurrentUser() user: { sub: number }, @Body() dto: UpdateStatusDto) {
     return this.facultyService.updateStatus(user.sub, dto);
+  }
+
+  // ── Public parameterized endpoint — must come last among GET routes ──
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a professor by ID' })
+  @ApiResponse({ status: 200, description: 'Returns the professor' })
+  @ApiResponse({ status: 404, description: 'Professor not found' })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.facultyService.findOne(id);
   }
 }
