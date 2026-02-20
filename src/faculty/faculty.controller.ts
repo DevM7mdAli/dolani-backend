@@ -54,6 +54,26 @@ export class FacultyController {
     return this.facultyService.getProfile(user.sub);
   }
 
+  @Get('admin/office-hours')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all office hours of the all doctors (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Office hours of all doctors' })
+  getAllOfficeHours(@Query() query: PaginationQueryDto) {
+    return this.facultyService.getAllDoctorsOfficeHours(query);
+  }
+
+  @Get('office-hours')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.FACULTY)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all office hours of the all doctors' })
+  @ApiResponse({ status: 200, description: 'Office hours of the doctor' })
+  getOfficeHours(@CurrentUser() user: { sub: number }) {
+    return this.facultyService.getDoctorOfficeHours(user.sub);
+  }
+
   @Patch('office-hours')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.FACULTY)

@@ -53,6 +53,27 @@ export class FacultyService {
     return this.getProfile(userId);
   }
 
+  async getAllDoctorsOfficeHours(query: PaginationQueryDto) {
+    const { page = 1, limit = 20 } = query;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.professor.findMany({
+        skip,
+        take: limit,
+      }),
+      this.prisma.professor.count(),
+    ]);
+    return this.paginate(data, total, page, limit);
+  }
+
+  async getDoctorOfficeHours(userId: number) {
+    return this.prisma.officeHours.findMany({
+      where: { professor: { user_id: userId } },
+      orderBy: [{ day: 'asc' }, { start_time: 'asc' }],
+    });
+  }
+
   /** Update professor availability status */
   async updateStatus(userId: number, dto: UpdateStatusDto) {
     const professor = await this.ensureProfessor(userId);
@@ -153,5 +174,17 @@ export class FacultyService {
     }
 
     return professor;
+  }
+
+  private paginate<T>(data: T[], total: number, page: number, limit: number): PaginatedResult<T> {
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }
