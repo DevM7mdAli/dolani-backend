@@ -20,7 +20,10 @@ model User {
   role          Role       @default(FACULTY)
   refresh_token String?    // hashed refresh token
 
-  professor     Professor?
+  professor        Professor?
+  it_profile       IT?
+  security_profile Security?
+
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -30,6 +33,8 @@ model User {
 enum Role {
   ADMIN
   FACULTY
+  IT
+  SECURITY
 }
 
 // ============================================================================
@@ -276,4 +281,33 @@ enum DayOfWeek {
   THURSDAY
   FRIDAY
   SATURDAY
+}
+
+// ============================================================================
+// IT STAFF (IT)
+// ============================================================================
+
+model IT {
+  id            Int @id @default(autoincrement())
+  user_id       Int @unique
+  user          User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+// ============================================================================
+// Security STAFF (Security)
+// ============================================================================
+
+
+model Security{
+  id Int @id @default(autoincrement())
+  user_id Int @unique
+  user          User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
