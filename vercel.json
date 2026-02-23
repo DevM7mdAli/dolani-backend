@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "**/*.js": {
-      "includeFiles": "node_modules/swagger-ui-express/**"
-    }
-  }
-}
