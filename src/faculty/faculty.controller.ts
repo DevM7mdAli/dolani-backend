@@ -1,15 +1,17 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { ProfessorStatus, Role } from '@prisma/client';
+import { ProfessorStatus, ReportCategory, ReportStatus, Role } from '@prisma/client';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateOfficeHoursDto } from './dto/update-office-hours.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpsertScheduleDto } from './dto/upsert-schedule.dto';
 import { FacultyService } from './faculty.service';
 
 @ApiTags('Faculty')
@@ -92,6 +94,60 @@ export class FacultyController {
   @ApiResponse({ status: 200, description: 'Status updated' })
   updateStatus(@CurrentUser() user: { sub: number }, @Body() dto: UpdateStatusDto) {
     return this.facultyService.updateStatus(user.sub, dto);
+  }
+
+  // ── Teaching schedule ──────────────────────────────────────────────────
+
+  @Get('schedule')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.FACULTY)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get own weekly teaching schedule (Faculty only)' })
+  @ApiResponse({ status: 200, description: 'Returns list of teaching slots ordered by day/time' })
+  getSchedule(@CurrentUser() user: { sub: number }) {
+    return this.facultyService.getSchedule(user.sub);
+  }
+
+  @Put('schedule')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.FACULTY)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Replace full weekly teaching schedule (Faculty only)',
+    description: 'Atomic bulk-replace: deletes all existing slots then inserts the provided list.',
+  })
+  @ApiResponse({ status: 200, description: 'Updated list of teaching slots' })
+  upsertSchedule(@CurrentUser() user: { sub: number }, @Body() dto: UpsertScheduleDto) {
+    return this.facultyService.upsertSchedule(user.sub, dto);
+  }
+
+  // ── Reports ────────────────────────────────────────────────────────────
+
+  @Get('reports')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.FACULTY)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List own submitted reports with optional filters (Faculty only)' })
+  @ApiQuery({ name: 'status', required: false, enum: ReportStatus })
+  @ApiQuery({ name: 'category', required: false, enum: ReportCategory })
+  @ApiResponse({ status: 200, description: "Paginated list of the professor's reports" })
+  getMyReports(
+    @CurrentUser() user: { sub: number },
+    @Query() query: PaginationQueryDto,
+    @Query('status') status?: ReportStatus,
+    @Query('category') category?: ReportCategory,
+  ) {
+    return this.facultyService.getMyReports(user.sub, query, status, category);
+  }
+
+  @Post('reports')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.FACULTY)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Submit a new facility/room report (Faculty only)' })
+  @ApiResponse({ status: 201, description: 'Report created successfully' })
+  createReport(@CurrentUser() user: { sub: number }, @Body() dto: CreateReportDto) {
+    return this.facultyService.createReport(user.sub, dto);
   }
 
   // ── Public parameterized endpoint — must come last among GET routes ──
