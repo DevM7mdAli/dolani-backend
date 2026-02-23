@@ -1,13 +1,13 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { ReportCategory, ReportStatus, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { ReportQueryDto } from './dto/report-query.dto';
 import { UpdateReportStatusDto } from './dto/update-report-status.dto';
 import { ItService } from './it.service';
 
@@ -35,18 +35,10 @@ export class ItController {
 
   @Get('reports')
   @ApiOperation({ summary: 'List all facility reports with optional filters (IT only)' })
-  @ApiQuery({ name: 'status', required: false, enum: ReportStatus })
-  @ApiQuery({ name: 'category', required: false, enum: ReportCategory })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by title, room or professor name' })
   @ApiResponse({ status: 200, description: 'Paginated list of all reports' })
-  getAllReports(
-    @Query() query: PaginationQueryDto,
-    @Query('status') status?: ReportStatus,
-    @Query('category') category?: ReportCategory,
-  ) {
-    return this.itService.getAllReports(query, status, category);
+  getAllReports(@Query() query: ReportQueryDto) {
+    const { status, category, ...pagination } = query;
+    return this.itService.getAllReports(pagination, status, category);
   }
 
   // NOTE: /stats must come before /:id to prevent "stats" being parsed as an integer id.
