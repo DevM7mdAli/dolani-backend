@@ -35,6 +35,7 @@ async function bootstrap(): Promise<void> {
   const port = configService.get<number>('PORT', 8000);
   await app.listen(port);
 }
-bootstrap().catch(() => {
+bootstrap().catch((err) => {
+  console.error('Fatal Error during bootstrap:', err);
   process.exit(1);
 });
