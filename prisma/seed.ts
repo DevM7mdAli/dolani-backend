@@ -3,13 +3,13 @@ import { DeptType, LocationType, PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { Pool } from 'pg';
 
-// 1. Create a connection pool using your env variable
+// 1. Create the pool
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-// 2. Create the Prisma Adapter
-const adapter = new PrismaPg(pool);
+// 2. THE SILVER BULLET: Explicitly pass the schema to the adapter options!
+const adapter = new PrismaPg(pool, { schema: 'dolani_api' });
 
-// 3. Initialize Prisma with the adapter
+// 3. Initialize Prisma
 const prisma = new PrismaClient({ adapter });
 
 const rawRooms = [
