@@ -249,7 +249,9 @@ model Professor {
   office     Location?   @relation(fields: [location_id], references: [id])
   department Department  @relation(fields: [department_id], references: [id])
 
-  office_hours OfficeHours[]
+  office_hours    OfficeHours[]
+  teaching_slots  TeachingSlot[]
+  reports         Report[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -284,6 +286,75 @@ enum DayOfWeek {
 }
 
 // ============================================================================
+// TEACHING SCHEDULE
+// ============================================================================
+
+model TeachingSlot {
+  id              Int       @id @default(autoincrement())
+  professor_id    Int
+  course_code     String
+  course_name     String
+  course_name_ar  String?
+  day             DayOfWeek
+  start_time      String    // HH:MM format
+  end_time        String    // HH:MM format
+  room            String
+  student_count   Int       @default(0)
+
+  professor Professor @relation(fields: [professor_id], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("teaching_slots")
+}
+
+// ============================================================================
+// REPORTS
+// ============================================================================
+
+enum ReportStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum ReportCategory {
+  PROJECTOR
+  SMART_BOARD
+  COMPUTER
+  PRINTER
+  AC
+  LIGHT
+  DOOR
+  PLUG
+  CLEANLINESS
+  SAFETY
+  OTHER
+}
+
+model Report {
+  id              Int            @id @default(autoincrement())
+  title           String
+  description     String
+  category        ReportCategory
+  status          ReportStatus   @default(PENDING)
+  room            String
+  resolved_at     DateTime?
+
+  professor_id    Int
+  resolved_by_id  Int?
+
+  professor   Professor @relation(fields: [professor_id], references: [id], onDelete: Cascade)
+  resolved_by IT?       @relation(fields: [resolved_by_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reports")
+}
+
+// ============================================================================
 // IT STAFF (IT)
 // ============================================================================
 
@@ -291,6 +362,8 @@ model IT {
   id            Int @id @default(autoincrement())
   user_id       Int @unique
   user          User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  resolved_reports Report[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

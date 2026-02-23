@@ -1,11 +1,13 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { Prisma, ProfessorStatus } from '@prisma/client';
+import { Prisma, ProfessorStatus, ReportCategory, ReportStatus } from '@prisma/client';
 
 import { PaginatedResult, PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateOfficeHoursDto } from './dto/update-office-hours.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpsertScheduleDto } from './dto/upsert-schedule.dto';
 
 @Injectable()
 export class FacultyService {
@@ -161,6 +163,94 @@ export class FacultyService {
       },
       orderBy: { full_name: 'asc' },
     });
+  }
+
+  // ── Teaching Schedule ──────────────────────────────────────────────
+
+  /** Get all teaching slots for the authenticated professor */
+  async getSchedule(userId: number) {
+    const professor = await this.ensureProfessor(userId);
+    return this.prisma.teachingSlot.findMany({
+      where: { professor_id: professor.id },
+      orderBy: [{ day: 'asc' }, { start_time: 'asc' }],
+    });
+  }
+
+  /**
+   * Bulk-replace the professor's teaching schedule.
+   * Deletes all existing slots then re-inserts the provided ones atomically.
+   */
+  async upsertSchedule(userId: number, dto: UpsertScheduleDto) {
+    const professor = await this.ensureProfessor(userId);
+
+    await this.prisma.$transaction([
+      this.prisma.teachingSlot.deleteMany({ where: { professor_id: professor.id } }),
+      ...dto.slots.map((slot) =>
+        this.prisma.teachingSlot.create({
+          data: {
+            professor_id: professor.id,
+            course_code: slot.course_code,
+            course_name: slot.course_name,
+            course_name_ar: slot.course_name_ar,
+            day: slot.day,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            room: slot.room,
+            student_count: slot.student_count,
+          },
+        }),
+      ),
+    ]);
+
+    return this.getSchedule(userId);
+  }
+
+  // ── Reports ─────────────────────────────────────────────────────────
+
+  /** Submit a new facility/room report */
+  async createReport(userId: number, dto: CreateReportDto) {
+    const professor = await this.ensureProfessor(userId);
+
+    return this.prisma.report.create({
+      data: {
+        professor_id: professor.id,
+        title: dto.title,
+        description: dto.description,
+        category: dto.category,
+        room: dto.room,
+        status: ReportStatus.PENDING,
+      },
+    });
+  }
+
+  /** Get paginated list of reports submitted by the authenticated professor */
+  async getMyReports(
+    userId: number,
+    query: PaginationQueryDto,
+    status?: ReportStatus,
+    category?: ReportCategory,
+  ): Promise<PaginatedResult<unknown>> {
+    const professor = await this.ensureProfessor(userId);
+    const { page = 1, limit = 20 } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ReportWhereInput = {
+      professor_id: professor.id,
+      ...(status ? { status } : {}),
+      ...(category ? { category } : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.report.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.report.count({ where }),
+    ]);
+
+    return this.paginate(data, total, page, limit);
   }
 
   /** Ensure the user has a professor profile */
