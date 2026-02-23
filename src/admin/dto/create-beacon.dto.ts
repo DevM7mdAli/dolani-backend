@@ -9,10 +9,10 @@ export class CreateBeaconDto {
   @IsUUID()
   uuid!: string;
 
-  @ApiProperty({ example: 'Beacon Floor-1 Hall' })
+  @ApiPropertyOptional({ example: 'Beacon Floor-1 Hall', description: 'Optional label for the beacon' })
   @IsString()
-  @IsNotEmpty()
-  name!: string;
+  @IsOptional()
+  name?: string;
 
   @ApiPropertyOptional({ example: true, default: true })
   @IsBoolean()
@@ -28,4 +28,10 @@ export class CreateBeaconDto {
   @IsInt()
   @IsPositive()
   floor_id!: number;
+
+  @ApiPropertyOptional({ example: 1, description: 'Department ID (optional)' })
+  @IsInt()
+  @IsPositive()
+  @IsOptional()
+  department_id?: number;
 }

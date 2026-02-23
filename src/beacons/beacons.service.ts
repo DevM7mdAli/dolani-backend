@@ -56,10 +56,16 @@ export class BeaconsService {
       throw new NotFoundException(`Beacon with UUID "${beaconUuid}" not found`);
     }
 
-    // Persist reading
-    await this.prisma.rssiReading.create({
-      data: { beacon_id: beacon.id, rssi },
-    });
+    // Persist reading and increment signal count
+    await this.prisma.$transaction([
+      this.prisma.rssiReading.create({
+        data: { beacon_id: beacon.id, rssi },
+      }),
+      this.prisma.beacon.update({
+        where: { id: beacon.id },
+        data: { signal_count: { increment: 1 } },
+      }),
+    ]);
 
     // Update in-memory sliding window
     const window = this.rssiWindows.get(beacon.id) ?? [];

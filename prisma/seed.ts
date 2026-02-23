@@ -685,6 +685,50 @@ async function main() {
     },
   });
 
+  //! Create an Security user as well
+  const securityHash = await bcrypt.hash('security123', 10);
+  const security = await prisma.user.upsert({
+    where: { email: 'security@iau.edu.sa' },
+    update: {},
+    create: {
+      email: 'security@iau.edu.sa',
+      username: 'security',
+      password_hash: securityHash,
+      name: 'Security',
+      role: Role.SECURITY,
+    },
+  });
+
+  await prisma.security.upsert({
+    where: { user_id: security.id },
+    update: {},
+    create: {
+      user_id: security.id,
+    },
+  });
+
+  //! Create an IT user as well
+  const itHash = await bcrypt.hash('IT1234567', 10);
+  const it = await prisma.user.upsert({
+    where: { email: 'IT@iau.edu.sa' },
+    update: {},
+    create: {
+      email: 'IT@iau.edu.sa',
+      username: 'IT',
+      password_hash: itHash,
+      name: 'IT',
+      role: Role.IT,
+    },
+  });
+
+  await prisma.iT.upsert({
+    where: { user_id: it.id },
+    update: {},
+    create: {
+      user_id: it.id,
+    },
+  });
+
   console.log('✅ Locations & Users created');
   console.log('🎉 Seeding completed successfully.');
 }

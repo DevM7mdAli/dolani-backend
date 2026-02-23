@@ -24,7 +24,7 @@ export class OfficeHourEntryDto {
 export class UpdateOfficeHoursDto {
   @ApiProperty({ type: [OfficeHourEntryDto], description: 'Array of office hour entries' })
   @IsArray()
-  @ArrayMinSize(1)
+  @ArrayMinSize(0)
   @ValidateNested({ each: true })
   @Type(() => OfficeHourEntryDto)
   officeHours!: OfficeHourEntryDto[];

@@ -6,6 +6,7 @@ import { Role } from '@prisma/client';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { AdminService } from './admin.service';
 import { CreateBeaconDto } from './dto/create-beacon.dto';
 import { CreateBuildingDto } from './dto/create-building.dto';
@@ -13,6 +14,11 @@ import { CreateDepartmentDto } from './dto/create-department.dto';
 import { CreateFloorDto } from './dto/create-floor.dto';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { CreatePathDto } from './dto/create-path.dto';
+import { UpdateBeaconDto } from './dto/update-beacon.dto';
+import { UpdateBuildingDto } from './dto/update-building.dto';
+import { UpdateDepartmentDto } from './dto/update-department.dto';
+import { UpdateFloorDto } from './dto/update-floor.dto';
+import { UpdateLocationDto } from './dto/update-location.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -44,6 +50,12 @@ export class AdminController {
     return this.adminService.findBuildingById(id);
   }
 
+  @Patch('buildings/:id')
+  @ApiOperation({ summary: 'Update a building' })
+  updateBuilding(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateBuildingDto) {
+    return this.adminService.updateBuilding(id, dto);
+  }
+
   @Delete('buildings/:id')
   @ApiOperation({ summary: 'Delete a building (cascades to floors)' })
   deleteBuilding(@Param('id', ParseIntPipe) id: number) {
@@ -70,6 +82,12 @@ export class AdminController {
   @ApiOperation({ summary: 'Get floor by ID (with locations and beacons)' })
   findFloor(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.findFloorById(id);
+  }
+
+  @Patch('floors/:id')
+  @ApiOperation({ summary: 'Update a floor' })
+  updateFloor(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateFloorDto) {
+    return this.adminService.updateFloor(id, dto);
   }
 
   @Delete('floors/:id')
@@ -99,6 +117,12 @@ export class AdminController {
     return this.adminService.findDepartmentById(id);
   }
 
+  @Patch('departments/:id')
+  @ApiOperation({ summary: 'Update a department' })
+  updateDepartment(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateDepartmentDto) {
+    return this.adminService.updateDepartment(id, dto);
+  }
+
   @Delete('departments/:id')
   @ApiOperation({ summary: 'Delete a department' })
   deleteDepartment(@Param('id', ParseIntPipe) id: number) {
@@ -115,10 +139,10 @@ export class AdminController {
   }
 
   @Get('locations')
-  @ApiOperation({ summary: 'List all locations (optionally filter by floor)' })
+  @ApiOperation({ summary: 'List locations with pagination and optional floor filter' })
   @ApiQuery({ name: 'floorId', required: false, type: Number })
-  findAllLocations(@Query('floorId') floorId?: string) {
-    return this.adminService.findAllLocations(floorId ? +floorId : undefined);
+  findAllLocations(@Query() query: PaginationQueryDto, @Query('floorId') floorId?: string) {
+    return this.adminService.findAllLocations(query, floorId ? +floorId : undefined);
   }
 
   @Get('locations/:id')
@@ -129,7 +153,7 @@ export class AdminController {
 
   @Patch('locations/:id')
   @ApiOperation({ summary: 'Update a location' })
-  updateLocation(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<CreateLocationDto>) {
+  updateLocation(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateLocationDto) {
     return this.adminService.updateLocation(id, dto);
   }
 
@@ -149,9 +173,19 @@ export class AdminController {
   }
 
   @Get('paths')
-  @ApiOperation({ summary: 'List all paths' })
-  findAllPaths() {
-    return this.adminService.findAllPaths();
+  @ApiOperation({ summary: 'List paths with pagination and optional filters' })
+  @ApiQuery({ name: 'fromLocationId', required: false, type: Number })
+  @ApiQuery({ name: 'toLocationId', required: false, type: Number })
+  findAllPaths(
+    @Query() query: PaginationQueryDto,
+    @Query('fromLocationId') fromLocationId?: string,
+    @Query('toLocationId') toLocationId?: string,
+  ) {
+    return this.adminService.findAllPaths(
+      query,
+      fromLocationId ? +fromLocationId : undefined,
+      toLocationId ? +toLocationId : undefined,
+    );
   }
 
   @Delete('paths/:id')
@@ -170,9 +204,16 @@ export class AdminController {
   }
 
   @Get('beacons')
-  @ApiOperation({ summary: 'List all beacons' })
-  findAllBeacons() {
-    return this.adminService.findAllBeacons();
+  @ApiOperation({ summary: 'List beacons with pagination and optional location filter' })
+  @ApiQuery({ name: 'locationId', required: false, type: Number })
+  findAllBeacons(@Query() query: PaginationQueryDto, @Query('locationId') locationId?: string) {
+    return this.adminService.findAllBeacons(query, locationId ? +locationId : undefined);
+  }
+
+  @Patch('beacons/:id')
+  @ApiOperation({ summary: 'Update a beacon' })
+  updateBeacon(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateBeaconDto) {
+    return this.adminService.updateBeacon(id, dto);
   }
 
   @Delete('beacons/:id')

@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { LocationType } from '@prisma/client';
-import { IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString } from 'class-validator';
+import { Equipment, LocationType } from '@prisma/client';
+import { IsArray, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, Min } from 'class-validator';
 
 export class CreateLocationDto {
   @ApiProperty({ enum: LocationType, example: LocationType.OFFICE })
@@ -18,6 +18,23 @@ export class CreateLocationDto {
   @IsString()
   @IsOptional()
   room_number?: string;
+
+  @ApiPropertyOptional({ example: 30, description: 'Room capacity (default 0)', default: 0 })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  capacity?: number;
+
+  @ApiPropertyOptional({
+    enum: Equipment,
+    isArray: true,
+    example: [Equipment.PROJECTOR, Equipment.WHITEBOARD],
+    description: 'List of equipment in this location',
+  })
+  @IsArray()
+  @IsEnum(Equipment, { each: true })
+  @IsOptional()
+  equipment?: Equipment[];
 
   @ApiProperty({ example: 45.5, description: 'X coordinate on floor plan' })
   @IsNumber()

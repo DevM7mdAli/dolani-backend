@@ -7,8 +7,10 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { BeaconsModule } from './beacons/beacons.module';
 import { FacultyModule } from './faculty/faculty.module';
+import { ItModule } from './it/it.module';
 import { NavigationModule } from './navigation/navigation.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SecutiryModule } from './secutiry/secutiry.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -21,6 +23,8 @@ import { UsersModule } from './users/users.module';
     BeaconsModule,
     FacultyModule,
     AdminModule,
+    ItModule,
+    SecutiryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

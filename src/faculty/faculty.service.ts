@@ -1,5 +1,8 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
+import { Prisma, ProfessorStatus } from '@prisma/client';
+
+import { PaginatedResult, PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateOfficeHoursDto } from './dto/update-office-hours.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
@@ -50,6 +53,27 @@ export class FacultyService {
     return this.getProfile(userId);
   }
 
+  async getAllDoctorsOfficeHours(query: PaginationQueryDto) {
+    const { page = 1, limit = 20 } = query;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.professor.findMany({
+        skip,
+        take: limit,
+      }),
+      this.prisma.professor.count(),
+    ]);
+    return this.paginate(data, total, page, limit);
+  }
+
+  async getDoctorOfficeHours(userId: number) {
+    return this.prisma.officeHours.findMany({
+      where: { professor: { user_id: userId } },
+      orderBy: [{ day: 'asc' }, { start_time: 'asc' }],
+    });
+  }
+
   /** Update professor availability status */
   async updateStatus(userId: number, dto: UpdateStatusDto) {
     const professor = await this.ensureProfessor(userId);
@@ -61,16 +85,49 @@ export class FacultyService {
     });
   }
 
-  /** List all professors with their office hours and departments (public) */
-  async findAll() {
-    return this.prisma.professor.findMany({
-      include: {
-        office: true,
-        department: true,
-        office_hours: { orderBy: { day: 'asc' } },
-      },
-      orderBy: { full_name: 'asc' },
-    });
+  /** List professors with pagination, optional department and status filters */
+  async findAll(
+    query: PaginationQueryDto,
+    departmentId?: number,
+    status?: ProfessorStatus,
+  ): Promise<PaginatedResult<unknown>> {
+    const { page = 1, limit = 20, search, sort, order = 'asc' } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ProfessorWhereInput = {
+      ...(departmentId ? { department_id: departmentId } : {}),
+      ...(status ? { status } : {}),
+      ...(search
+        ? {
+            OR: [
+              { full_name: { contains: search, mode: 'insensitive' as const } },
+              { email: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const orderBy: Prisma.ProfessorOrderByWithRelationInput = sort ? { [sort]: order } : { full_name: order };
+
+    const [data, total] = await Promise.all([
+      this.prisma.professor.findMany({
+        where,
+        include: {
+          office: true,
+          department: true,
+          office_hours: { orderBy: { day: 'asc' } },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      this.prisma.professor.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   /** Find a single professor by ID (public) */
@@ -117,5 +174,17 @@ export class FacultyService {
     }
 
     return professor;
+  }
+
+  private paginate<T>(data: T[], total: number, page: number, limit: number): PaginatedResult<T> {
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }
