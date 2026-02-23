@@ -30,13 +30,21 @@ async function bootstrap(): Promise<void> {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document, {
-    customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/11.2.6/swagger-ui.min.css',
-    customJs: [
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/11.2.6/swagger-ui-bundle.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/11.2.6/swagger-ui-standalone-preset.js',
-    ],
-  });
+  const swaggerCssCDN = configService.get<string>('SWAGGER_FROM_CDN', 'true');
+  SwaggerModule.setup(
+    'api/docs',
+    app,
+    document,
+    swaggerCssCDN == 'true'
+      ? {
+          customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.29.1/swagger-ui.min.css',
+          customJs: [
+            'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.29.1/swagger-ui-bundle.js',
+            'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.29.1/swagger-ui-standalone-preset.js',
+          ],
+        }
+      : {},
+  );
 
   const port = configService.get<number>('PORT', 8000);
   await app.listen(port);
