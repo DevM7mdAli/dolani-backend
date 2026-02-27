@@ -20,4 +20,12 @@ export class NavigateDto {
   @IsBoolean()
   @IsOptional()
   emergency?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'When true, exclude STAIRS nodes from pathfinding (accessibility)',
+  })
+  @IsBoolean()
+  @IsOptional()
+  avoidStairs?: boolean;
 }
