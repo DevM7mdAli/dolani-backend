@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { ProfessorStatus, ReportCategory, ReportStatus, Role } from '@prisma/client';
+import { ProfessorStatus, Role } from '@prisma/client';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -9,6 +9,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { CreateReportDto } from './dto/create-report.dto';
+import { ReportQueryDto } from './dto/report-query.dto';
 import { UpdateOfficeHoursDto } from './dto/update-office-hours.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { UpsertScheduleDto } from './dto/upsert-schedule.dto';
@@ -128,16 +129,9 @@ export class FacultyController {
   @Roles(Role.FACULTY)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List own submitted reports with optional filters (Faculty only)' })
-  @ApiQuery({ name: 'status', required: false, enum: ReportStatus })
-  @ApiQuery({ name: 'category', required: false, enum: ReportCategory })
   @ApiResponse({ status: 200, description: "Paginated list of the professor's reports" })
-  getMyReports(
-    @CurrentUser() user: { sub: number },
-    @Query() query: PaginationQueryDto,
-    @Query('status') status?: ReportStatus,
-    @Query('category') category?: ReportCategory,
-  ) {
-    return this.facultyService.getMyReports(user.sub, query, status, category);
+  getMyReports(@CurrentUser() user: { sub: number }, @Query() query: ReportQueryDto) {
+    return this.facultyService.getMyReports(user.sub, query, query.status);
   }
 
   @Post('reports')
