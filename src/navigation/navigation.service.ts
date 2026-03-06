@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
-import { Location, LocationType, Path } from '@prisma/client';
+import { LocationType } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -12,6 +12,7 @@ export interface GraphNode {
   x: number;
   y: number;
   floorId: number;
+  floorNumber: number;
 }
 
 interface GraphEdge {
@@ -43,8 +44,8 @@ export class NavigationService implements OnModuleInit {
 
   /** Load all locations and paths from DB into in-memory graph */
   async buildGraph(): Promise<void> {
-    const [locations, paths]: [Location[], Path[]] = await Promise.all([
-      this.prisma.location.findMany(),
+    const [locations, paths] = await Promise.all([
+      this.prisma.location.findMany({ include: { floor: true } }),
       this.prisma.path.findMany(),
     ]);
 
@@ -60,6 +61,7 @@ export class NavigationService implements OnModuleInit {
         x: loc.coordinate_x,
         y: loc.coordinate_y,
         floorId: loc.floor_id,
+        floorNumber: loc.floor.floor_number,
       });
       this.adjacency.set(loc.id, []);
     }
