@@ -15,7 +15,12 @@ export class NavigationController {
   @ApiResponse({ status: 200, description: 'Returns the shortest path with waypoints and total distance' })
   @ApiResponse({ status: 404, description: 'No path found between the two locations' })
   navigate(@Body() dto: NavigateDto) {
-    const result = this.navigationService.navigate(dto.startLocationId, dto.endLocationId, dto.emergency ?? false);
+    const result = this.navigationService.navigate(
+      dto.startLocationId,
+      dto.endLocationId,
+      dto.emergency ?? false,
+      dto.avoidStairs ?? false,
+    );
 
     if (!result) {
       throw new NotFoundException('No path found between the specified locations');

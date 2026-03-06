@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { BeaconsModule } from './beacons/beacons.module';
 import { FacultyModule } from './faculty/faculty.module';
 import { ItModule } from './it/it.module';
+import { LocationsModule } from './locations/locations.module';
 import { NavigationModule } from './navigation/navigation.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SecutiryModule } from './secutiry/secutiry.module';
@@ -25,6 +26,7 @@ import { UsersModule } from './users/users.module';
     AdminModule,
     ItModule,
     SecutiryModule,
+    LocationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
