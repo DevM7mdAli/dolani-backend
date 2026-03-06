@@ -623,8 +623,8 @@ async function main() {
         type: type,
         floor_id: floorId,
         department_id: deptId,
-        coordinate_x: Math.random() * 100,
-        coordinate_y: Math.random() * 100,
+        coordinate_x: Math.random() * 1,
+        coordinate_y: Math.random() * 1,
       },
     });
 
