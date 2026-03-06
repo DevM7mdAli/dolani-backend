@@ -11,7 +11,8 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { email } });
+    const lowerCaseEmail = email.toLowerCase();
+    return this.prisma.user.findUnique({ where: { email: lowerCaseEmail } });
   }
 
   async findByUsername(username: string): Promise<User | null> {
@@ -38,10 +39,10 @@ export class UsersService {
     }
 
     const password_hash = await bcrypt.hash(dto.password, 10);
-
+    const lowerCaseEmail = dto.email.toLowerCase();
     return this.prisma.user.create({
       data: {
-        email: dto.email,
+        email: lowerCaseEmail,
         username: dto.username,
         password_hash,
         name: dto.name,

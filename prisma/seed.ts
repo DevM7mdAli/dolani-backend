@@ -638,6 +638,7 @@ async function main() {
         email = `user.${safeName}${Math.floor(Math.random() * 1000)}@iau.edu.sa`;
       }
 
+      email = email.toLowerCase();
       const username = email.split('@')[0];
       const hashedPassword = await bcrypt.hash('12345678', 10);
 
@@ -710,10 +711,10 @@ async function main() {
   //! Create an IT user as well
   const itHash = await bcrypt.hash('IT1234567', 10);
   const it = await prisma.user.upsert({
-    where: { email: 'IT@iau.edu.sa' },
+    where: { email: 'it@iau.edu.sa' },
     update: {},
     create: {
-      email: 'IT@iau.edu.sa',
+      email: 'it@iau.edu.sa',
       username: 'IT',
       password_hash: itHash,
       name: 'IT',
