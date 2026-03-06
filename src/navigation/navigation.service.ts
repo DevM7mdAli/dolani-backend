@@ -17,6 +17,7 @@ export interface GraphNode {
 interface GraphEdge {
   targetId: number;
   distance: number;
+  isAccessible: boolean;
 }
 
 export interface PathResult {
@@ -68,10 +69,12 @@ export class NavigationService implements OnModuleInit {
       this.adjacency.get(path.start_location_id)?.push({
         targetId: path.end_location_id,
         distance: path.distance,
+        isAccessible: path.is_accessible,
       });
       this.adjacency.get(path.end_location_id)?.push({
         targetId: path.start_location_id,
         distance: path.distance,
+        isAccessible: path.is_accessible,
       });
     }
 
@@ -142,8 +145,8 @@ export class NavigationService implements OnModuleInit {
         // In emergency mode, skip ELEVATOR nodes
         if (emergency && neighbor.type === LocationType.ELEVATOR) continue;
 
-        // Accessibility: skip STAIRS nodes when avoidStairs is set
-        if (avoidStairs && neighbor.type === LocationType.STAIRS) continue;
+        // Accessibility: skip STAIRS nodes or inaccessible edges
+        if (avoidStairs && (neighbor.type === LocationType.STAIRS || !edge.isAccessible)) continue;
 
         const tentativeG = (gScore.get(current) ?? Infinity) + edge.distance;
 

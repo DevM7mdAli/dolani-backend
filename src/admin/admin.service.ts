@@ -1,8 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { Prisma } from '@prisma/client';
 
 import { PaginatedResult, PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { NavigationService } from '../navigation/navigation.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBeaconDto } from './dto/create-beacon.dto';
 import { CreateBuildingDto } from './dto/create-building.dto';
@@ -10,6 +11,7 @@ import { CreateDepartmentDto } from './dto/create-department.dto';
 import { CreateFloorDto } from './dto/create-floor.dto';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { CreatePathDto } from './dto/create-path.dto';
+import { SyncGraphDto } from './dto/sync-graph.dto';
 import { UpdateBeaconDto } from './dto/update-beacon.dto';
 import { UpdateBuildingDto } from './dto/update-building.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
@@ -18,7 +20,12 @@ import { UpdateLocationDto } from './dto/update-location.dto';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AdminService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly navigationService: NavigationService,
+  ) {}
 
   // ── Buildings ───────────────────────────────────────────────────────
 
@@ -236,6 +243,8 @@ export class AdminService {
           location_id: dto.location_id,
           floor_id: dto.floor_id,
           department_id: dto.department_id,
+          coordinate_x: dto.coordinate_x,
+          coordinate_y: dto.coordinate_y,
         },
         include: { location: true, floor: true, department: true },
       })
@@ -309,5 +318,79 @@ export class AdminService {
       }
       throw err;
     };
+  }
+
+  // ── Graph Sync ──────────────────────────────────────────────────────
+
+  async syncGraph(dto: SyncGraphDto) {
+    const { floor_id, nodes, edges, beacons } = dto;
+
+    const idMap = await this.prisma.$transaction(async (tx) => {
+      // 1. Remove existing entities for this floor
+      await tx.beacon.deleteMany({ where: { floor_id } });
+      await tx.path.deleteMany({
+        where: {
+          OR: [{ start_location: { floor_id } }, { end_location: { floor_id } }],
+        },
+      });
+      await tx.location.deleteMany({ where: { floor_id } });
+
+      // 2. Create nodes – build client_id → server id map
+      const clientToServer: Record<string, number> = {};
+      for (const n of nodes) {
+        const loc = await tx.location.create({
+          data: {
+            name: n.name,
+            room_number: n.room_number ?? null,
+            type: n.type,
+            coordinate_x: n.coordinate_x,
+            coordinate_y: n.coordinate_y,
+            floor_id,
+          },
+        });
+        clientToServer[n.client_id] = loc.id;
+      }
+
+      // 3. Create edges
+      for (const e of edges) {
+        const startId = clientToServer[e.source_client_id];
+        const endId = clientToServer[e.target_client_id];
+        if (startId == null || endId == null) continue;
+        await tx.path.create({
+          data: {
+            start_location_id: startId,
+            end_location_id: endId,
+            distance: e.distance,
+            is_accessible: e.is_accessible,
+          },
+        });
+      }
+
+      // 4. Create beacons
+      for (const b of beacons) {
+        const locationId = b.linked_node_client_id ? (clientToServer[b.linked_node_client_id] ?? null) : null;
+        if (locationId == null) continue; // beacon must link to a location
+        await tx.beacon.create({
+          data: {
+            uuid: b.uuid,
+            name: b.name,
+            floor_id,
+            location_id: locationId,
+            coordinate_x: b.coordinate_x,
+            coordinate_y: b.coordinate_y,
+          },
+        });
+      }
+
+      return clientToServer;
+    });
+
+    // Reload the navigation graph after sync
+    await this.navigationService.reloadGraph();
+    this.logger.log(
+      `Graph synced for floor ${floor_id}: ${nodes.length} nodes, ${edges.length} edges, ${beacons.length} beacons`,
+    );
+
+    return { idMap };
   }
 }
