@@ -322,6 +322,51 @@ export class AdminService {
 
   // ── Graph Sync ──────────────────────────────────────────────────────
 
+  async getGraph(floorId: number) {
+    const [locations, paths, beacons] = await Promise.all([
+      this.prisma.location.findMany({
+        where: { floor_id: floorId },
+        orderBy: { id: 'asc' },
+      }),
+      this.prisma.path.findMany({
+        where: {
+          OR: [{ start_location: { floor_id: floorId } }, { end_location: { floor_id: floorId } }],
+        },
+        orderBy: { id: 'asc' },
+      }),
+      this.prisma.beacon.findMany({
+        where: { floor_id: floorId },
+        orderBy: { id: 'asc' },
+      }),
+    ]);
+
+    return {
+      nodes: locations.map((l) => ({
+        id: l.id,
+        name: l.name,
+        room_number: l.room_number,
+        type: l.type,
+        coordinate_x: l.coordinate_x,
+        coordinate_y: l.coordinate_y,
+      })),
+      edges: paths.map((p) => ({
+        id: p.id,
+        start_location_id: p.start_location_id,
+        end_location_id: p.end_location_id,
+        distance: p.distance,
+        is_accessible: p.is_accessible,
+      })),
+      beacons: beacons.map((b) => ({
+        id: b.id,
+        uuid: b.uuid,
+        name: b.name,
+        location_id: b.location_id,
+        coordinate_x: b.coordinate_x,
+        coordinate_y: b.coordinate_y,
+      })),
+    };
+  }
+
   async syncGraph(dto: SyncGraphDto) {
     const { floor_id, nodes, edges, beacons } = dto;
 

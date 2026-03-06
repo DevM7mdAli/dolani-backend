@@ -559,9 +559,15 @@ async function main() {
   });
 
   // 3. Create Floors (1, 2, 3)
-  const floor1 = await prisma.floor.create({ data: { floor_number: 1, building_id: building.id } });
-  const floor2 = await prisma.floor.create({ data: { floor_number: 2, building_id: building.id } });
-  const floor3 = await prisma.floor.create({ data: { floor_number: 3, building_id: building.id } });
+  const floor1 = await prisma.floor.create({
+    data: { floor_number: 1, building_id: building.id, floor_plan_image_url: 'http://localhost:3000/map.svg' },
+  });
+  const floor2 = await prisma.floor.create({
+    data: { floor_number: 2, building_id: building.id, floor_plan_image_url: 'http://localhost:3000/map.svg' },
+  });
+  const floor3 = await prisma.floor.create({
+    data: { floor_number: 3, building_id: building.id, floor_plan_image_url: 'http://localhost:3000/map.svg' },
+  });
 
   const floorMap = {
     '1': floor1.id,

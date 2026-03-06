@@ -223,7 +223,14 @@ export class AdminController {
     return this.adminService.deleteBeacon(id);
   }
 
-  // ── Graph Sync ──────────────────────────────────────────────────
+  // ── Graph Read / Sync ──────────────────────────────────────────
+
+  @Get('graph/:floorId')
+  @ApiOperation({ summary: 'Get the full graph (nodes, edges, beacons) for a floor' })
+  @ApiResponse({ status: 200, description: 'Returns all locations, paths, and beacons for the floor' })
+  getGraph(@Param('floorId', ParseIntPipe) floorId: number) {
+    return this.adminService.getGraph(floorId);
+  }
 
   @Post('graph/sync')
   @ApiOperation({ summary: 'Sync a full floor graph (nodes, edges, beacons) from the map editor' })
