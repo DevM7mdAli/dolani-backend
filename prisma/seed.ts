@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { DeptType, LocationType, PrismaClient, Role } from '@prisma/client';
+import { DeptType, Equipment, LocationType, PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { Pool } from 'pg';
 
@@ -535,6 +535,75 @@ function getLocationType(arabicType: string | undefined, hasDoctor: boolean): Lo
   }
 }
 
+function getEquipment(type: LocationType): Equipment[] {
+  switch (type) {
+    case LocationType.CLASSROOM:
+      return [
+        Equipment.PROJECTOR,
+        Equipment.WHITEBOARD,
+        Equipment.SMART_BOARD,
+        Equipment.PLUG,
+        Equipment.CHAIRS,
+        Equipment.ERASER,
+        Equipment.AC,
+        Equipment.LIGHT,
+        Equipment.DOOR,
+      ];
+    case LocationType.LAB:
+      return [
+        Equipment.COMPUTER,
+        Equipment.PROJECTOR,
+        Equipment.WHITEBOARD,
+        Equipment.PLUG,
+        Equipment.CHAIRS,
+        Equipment.AC,
+        Equipment.LIGHT,
+        Equipment.DOOR,
+      ];
+    case LocationType.OFFICE:
+      return [
+        Equipment.COMPUTER,
+        Equipment.PRINTER,
+        Equipment.WHITEBOARD,
+        Equipment.PLUG,
+        Equipment.CHAIRS,
+        Equipment.AC,
+        Equipment.LIGHT,
+        Equipment.DOOR,
+      ];
+    case LocationType.THEATER:
+    case LocationType.CONFERENCE:
+      return [
+        Equipment.PROJECTOR,
+        Equipment.SMART_BOARD,
+        Equipment.PLUG,
+        Equipment.CHAIRS,
+        Equipment.AC,
+        Equipment.LIGHT,
+        Equipment.DOOR,
+      ];
+    case LocationType.SERVER_ROOM:
+    case LocationType.ELECTRICAL_ROOM:
+      return [Equipment.AC, Equipment.LIGHT, Equipment.DOOR, Equipment.PLUG];
+    case LocationType.CAFETERIA:
+    case LocationType.WAITING_HALL:
+    case LocationType.MAIN_HALL:
+      return [Equipment.CHAIRS, Equipment.PLUG, Equipment.AC, Equipment.LIGHT, Equipment.DOOR];
+    case LocationType.CORRIDOR:
+    case LocationType.EXIT:
+    case LocationType.STAIRS:
+    case LocationType.RESTROOM:
+    case LocationType.STORE_ROOM:
+    case LocationType.SERVICE:
+    case LocationType.LOCKERS:
+      return [Equipment.LIGHT, Equipment.DOOR];
+    case LocationType.PRAYER_ROOM:
+      return [Equipment.AC, Equipment.LIGHT, Equipment.DOOR];
+    default:
+      return [Equipment.LIGHT, Equipment.DOOR];
+  }
+}
+
 async function main() {
   console.log('🌱 Starting database seed with real dataset...');
 
@@ -631,6 +700,7 @@ async function main() {
         department_id: deptId,
         coordinate_x: Math.random() * 1,
         coordinate_y: Math.random() * 1,
+        equipment: getEquipment(type),
       },
     });
 
