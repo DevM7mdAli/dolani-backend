@@ -48,6 +48,11 @@ export class SyncNodeDto {
   @Min(0)
   @Max(1)
   coordinate_y!: number;
+
+  @ApiPropertyOptional({ description: 'Department ID', example: 1 })
+  @IsInt()
+  @IsOptional()
+  department_id?: number;
 }
 
 export class SyncEdgeDto {

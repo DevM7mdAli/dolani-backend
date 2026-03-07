@@ -348,6 +348,7 @@ export class AdminService {
         type: l.type,
         coordinate_x: l.coordinate_x,
         coordinate_y: l.coordinate_y,
+        department_id: l.department_id,
       })),
       edges: paths.map((p) => ({
         id: p.id,
@@ -391,6 +392,7 @@ export class AdminService {
             coordinate_x: n.coordinate_x,
             coordinate_y: n.coordinate_y,
             floor_id,
+            department_id: n.department_id ?? null,
           },
         });
         clientToServer[n.client_id] = loc.id;
