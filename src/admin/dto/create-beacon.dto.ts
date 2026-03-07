@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
 
 export class CreateBeaconDto {
   @ApiProperty({ example: 'f7826da6-4fa2-4e98-8024-bc5b71e0893e' })
@@ -34,4 +34,12 @@ export class CreateBeaconDto {
   @IsPositive()
   @IsOptional()
   department_id?: number;
+
+  @ApiProperty({ example: 0.5, description: 'Normalized X coordinate (0–1)' })
+  @IsNumber()
+  coordinate_x!: number;
+
+  @ApiProperty({ example: 0.5, description: 'Normalized Y coordinate (0–1)' })
+  @IsNumber()
+  coordinate_y!: number;
 }

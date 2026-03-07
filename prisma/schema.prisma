@@ -170,10 +170,11 @@ enum LocationType {
 }
 
 model Path {
-  id                Int   @id @default(autoincrement())
+  id                Int     @id @default(autoincrement())
   start_location_id Int
   end_location_id   Int
-  distance          Float // Weight for A* algorithm
+  distance          Float   // Weight for A* algorithm
+  is_accessible     Boolean @default(true)
 
   start_location Location @relation("start_location", fields: [start_location_id], references: [id], onDelete: Cascade)
   end_location   Location @relation("end_location", fields: [end_location_id], references: [id], onDelete: Cascade)
@@ -195,6 +196,9 @@ model Beacon {
   name         String?
   operating    Boolean @default(true)
   signal_count Int     @default(0)
+
+  coordinate_x Float
+  coordinate_y Float
 
   location_id   Int
   floor_id      Int

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
-import { Location, LocationType, Path } from '@prisma/client';
+import { LocationType } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -12,11 +12,13 @@ export interface GraphNode {
   x: number;
   y: number;
   floorId: number;
+  floorNumber: number;
 }
 
 interface GraphEdge {
   targetId: number;
   distance: number;
+  isAccessible: boolean;
 }
 
 export interface PathResult {
@@ -42,8 +44,8 @@ export class NavigationService implements OnModuleInit {
 
   /** Load all locations and paths from DB into in-memory graph */
   async buildGraph(): Promise<void> {
-    const [locations, paths]: [Location[], Path[]] = await Promise.all([
-      this.prisma.location.findMany(),
+    const [locations, paths] = await Promise.all([
+      this.prisma.location.findMany({ include: { floor: true } }),
       this.prisma.path.findMany(),
     ]);
 
@@ -59,6 +61,7 @@ export class NavigationService implements OnModuleInit {
         x: loc.coordinate_x,
         y: loc.coordinate_y,
         floorId: loc.floor_id,
+        floorNumber: loc.floor.floor_number,
       });
       this.adjacency.set(loc.id, []);
     }
@@ -68,10 +71,12 @@ export class NavigationService implements OnModuleInit {
       this.adjacency.get(path.start_location_id)?.push({
         targetId: path.end_location_id,
         distance: path.distance,
+        isAccessible: path.is_accessible,
       });
       this.adjacency.get(path.end_location_id)?.push({
         targetId: path.start_location_id,
         distance: path.distance,
+        isAccessible: path.is_accessible,
       });
     }
 
@@ -142,8 +147,8 @@ export class NavigationService implements OnModuleInit {
         // In emergency mode, skip ELEVATOR nodes
         if (emergency && neighbor.type === LocationType.ELEVATOR) continue;
 
-        // Accessibility: skip STAIRS nodes when avoidStairs is set
-        if (avoidStairs && neighbor.type === LocationType.STAIRS) continue;
+        // Accessibility: skip STAIRS nodes or inaccessible edges
+        if (avoidStairs && (neighbor.type === LocationType.STAIRS || !edge.isAccessible)) continue;
 
         const tentativeG = (gScore.get(current) ?? Infinity) + edge.distance;
 

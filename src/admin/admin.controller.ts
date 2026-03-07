@@ -14,6 +14,7 @@ import { CreateDepartmentDto } from './dto/create-department.dto';
 import { CreateFloorDto } from './dto/create-floor.dto';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { CreatePathDto } from './dto/create-path.dto';
+import { SyncGraphDto } from './dto/sync-graph.dto';
 import { UpdateBeaconDto } from './dto/update-beacon.dto';
 import { UpdateBuildingDto } from './dto/update-building.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
@@ -220,5 +221,21 @@ export class AdminController {
   @ApiOperation({ summary: 'Delete a beacon' })
   deleteBeacon(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.deleteBeacon(id);
+  }
+
+  // ── Graph Read / Sync ──────────────────────────────────────────
+
+  @Get('graph/:floorId')
+  @ApiOperation({ summary: 'Get the full graph (nodes, edges, beacons) for a floor' })
+  @ApiResponse({ status: 200, description: 'Returns all locations, paths, and beacons for the floor' })
+  getGraph(@Param('floorId', ParseIntPipe) floorId: number) {
+    return this.adminService.getGraph(floorId);
+  }
+
+  @Post('graph/sync')
+  @ApiOperation({ summary: 'Sync a full floor graph (nodes, edges, beacons) from the map editor' })
+  @ApiResponse({ status: 201, description: 'Graph synced — returns client UUID → server ID mapping' })
+  syncGraph(@Body() dto: SyncGraphDto) {
+    return this.adminService.syncGraph(dto);
   }
 }

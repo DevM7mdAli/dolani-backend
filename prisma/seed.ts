@@ -1,5 +1,5 @@
 import { PrismaPg } from '@prisma/adapter-pg';
-import { DeptType, LocationType, PrismaClient, Role } from '@prisma/client';
+import { DeptType, Equipment, LocationType, PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { Pool } from 'pg';
 
@@ -535,6 +535,75 @@ function getLocationType(arabicType: string | undefined, hasDoctor: boolean): Lo
   }
 }
 
+function getEquipment(type: LocationType): Equipment[] {
+  switch (type) {
+    case LocationType.CLASSROOM:
+      return [
+        Equipment.PROJECTOR,
+        Equipment.WHITEBOARD,
+        Equipment.SMART_BOARD,
+        Equipment.PLUG,
+        Equipment.CHAIRS,
+        Equipment.ERASER,
+        Equipment.AC,
+        Equipment.LIGHT,
+        Equipment.DOOR,
+      ];
+    case LocationType.LAB:
+      return [
+        Equipment.COMPUTER,
+        Equipment.PROJECTOR,
+        Equipment.WHITEBOARD,
+        Equipment.PLUG,
+        Equipment.CHAIRS,
+        Equipment.AC,
+        Equipment.LIGHT,
+        Equipment.DOOR,
+      ];
+    case LocationType.OFFICE:
+      return [
+        Equipment.COMPUTER,
+        Equipment.PRINTER,
+        Equipment.WHITEBOARD,
+        Equipment.PLUG,
+        Equipment.CHAIRS,
+        Equipment.AC,
+        Equipment.LIGHT,
+        Equipment.DOOR,
+      ];
+    case LocationType.THEATER:
+    case LocationType.CONFERENCE:
+      return [
+        Equipment.PROJECTOR,
+        Equipment.SMART_BOARD,
+        Equipment.PLUG,
+        Equipment.CHAIRS,
+        Equipment.AC,
+        Equipment.LIGHT,
+        Equipment.DOOR,
+      ];
+    case LocationType.SERVER_ROOM:
+    case LocationType.ELECTRICAL_ROOM:
+      return [Equipment.AC, Equipment.LIGHT, Equipment.DOOR, Equipment.PLUG];
+    case LocationType.CAFETERIA:
+    case LocationType.WAITING_HALL:
+    case LocationType.MAIN_HALL:
+      return [Equipment.CHAIRS, Equipment.PLUG, Equipment.AC, Equipment.LIGHT, Equipment.DOOR];
+    case LocationType.CORRIDOR:
+    case LocationType.EXIT:
+    case LocationType.STAIRS:
+    case LocationType.RESTROOM:
+    case LocationType.STORE_ROOM:
+    case LocationType.SERVICE:
+    case LocationType.LOCKERS:
+      return [Equipment.LIGHT, Equipment.DOOR];
+    case LocationType.PRAYER_ROOM:
+      return [Equipment.AC, Equipment.LIGHT, Equipment.DOOR];
+    default:
+      return [Equipment.LIGHT, Equipment.DOOR];
+  }
+}
+
 async function main() {
   console.log('🌱 Starting database seed with real dataset...');
 
@@ -559,9 +628,15 @@ async function main() {
   });
 
   // 3. Create Floors (1, 2, 3)
-  const floor1 = await prisma.floor.create({ data: { floor_number: 1, building_id: building.id } });
-  const floor2 = await prisma.floor.create({ data: { floor_number: 2, building_id: building.id } });
-  const floor3 = await prisma.floor.create({ data: { floor_number: 3, building_id: building.id } });
+  const floor1 = await prisma.floor.create({
+    data: { floor_number: 1, building_id: building.id, floor_plan_image_url: 'http://localhost:3000/map.svg' },
+  });
+  const floor2 = await prisma.floor.create({
+    data: { floor_number: 2, building_id: building.id, floor_plan_image_url: 'http://localhost:3000/map.svg' },
+  });
+  const floor3 = await prisma.floor.create({
+    data: { floor_number: 3, building_id: building.id, floor_plan_image_url: 'http://localhost:3000/map.svg' },
+  });
 
   const floorMap = {
     '1': floor1.id,
@@ -623,8 +698,9 @@ async function main() {
         type: type,
         floor_id: floorId,
         department_id: deptId,
-        coordinate_x: Math.random() * 100,
-        coordinate_y: Math.random() * 100,
+        coordinate_x: Math.random() * 1,
+        coordinate_y: Math.random() * 1,
+        equipment: getEquipment(type),
       },
     });
 
