@@ -7,6 +7,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { LocationQueryDto } from '../locations/dto/location-query.dto';
 import { AdminService } from './admin.service';
 import { CreateBeaconDto } from './dto/create-beacon.dto';
 import { CreateBuildingDto } from './dto/create-building.dto';
@@ -140,10 +141,9 @@ export class AdminController {
   }
 
   @Get('locations')
-  @ApiOperation({ summary: 'List locations with pagination and optional floor filter' })
-  @ApiQuery({ name: 'floorId', required: false, type: Number })
-  findAllLocations(@Query() query: PaginationQueryDto, @Query('floorId') floorId?: string) {
-    return this.adminService.findAllLocations(query, floorId ? +floorId : undefined);
+  @ApiOperation({ summary: 'List locations with pagination and optional filters' })
+  findAllLocations(@Query() query: LocationQueryDto) {
+    return this.adminService.findAllLocations(query);
   }
 
   @Get('locations/:id')
