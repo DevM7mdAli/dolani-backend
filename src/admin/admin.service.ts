@@ -3,6 +3,7 @@ import { ConflictException, Injectable, Logger, NotFoundException } from '@nestj
 import { Prisma } from '@prisma/client';
 
 import { PaginatedResult, PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { LocationQueryDto } from '../locations/dto/location-query.dto';
 import { NavigationService } from '../navigation/navigation.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBeaconDto } from './dto/create-beacon.dto';
@@ -136,12 +137,14 @@ export class AdminService {
       .catch(this.handleUniqueError('Location room number on this floor'));
   }
 
-  async findAllLocations(query: PaginationQueryDto, floorId?: number) {
-    const { page = 1, limit = 20, search, sort, order = 'asc' } = query;
+  async findAllLocations(query: LocationQueryDto) {
+    const { page = 1, limit = 20, search, sort, order = 'asc', floorId, departmentId, type } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.LocationWhereInput = {
       ...(floorId ? { floor_id: floorId } : {}),
+      ...(departmentId ? { department_id: departmentId } : {}),
+      ...(type ? { type } : {}),
       ...(search
         ? {
             OR: [

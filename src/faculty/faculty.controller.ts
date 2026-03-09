@@ -1,16 +1,19 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { ProfessorStatus, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { CreateProfessorDto } from './dto/create-professor.dto';
 import { CreateReportDto } from './dto/create-report.dto';
+import { FacultyQueryDto } from './dto/faculty-query.dto';
 import { ReportQueryDto } from './dto/report-query.dto';
 import { UpdateOfficeHoursDto } from './dto/update-office-hours.dto';
+import { UpdateProfessorDto } from './dto/update-professor.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { UpsertScheduleDto } from './dto/upsert-schedule.dto';
 import { FacultyService } from './faculty.service';
@@ -24,15 +27,9 @@ export class FacultyController {
 
   @Get()
   @ApiOperation({ summary: 'List professors with pagination and optional filters' })
-  @ApiQuery({ name: 'departmentId', required: false, type: Number })
-  @ApiQuery({ name: 'status', required: false, enum: ProfessorStatus })
   @ApiResponse({ status: 200, description: 'Paginated list of professors' })
-  findAll(
-    @Query() query: PaginationQueryDto,
-    @Query('departmentId') departmentId?: string,
-    @Query('status') status?: ProfessorStatus,
-  ) {
-    return this.facultyService.findAll(query, departmentId ? +departmentId : undefined, status);
+  findAll(@Query() query: FacultyQueryDto) {
+    return this.facultyService.findAll(query, query.departmentId, query.status);
   }
 
   @Get('search')
@@ -142,6 +139,42 @@ export class FacultyController {
   @ApiResponse({ status: 201, description: 'Report created successfully' })
   createReport(@CurrentUser() user: { sub: number }, @Body() dto: CreateReportDto) {
     return this.facultyService.createReport(user.sub, dto);
+  }
+
+  // ── Admin CRUD endpoints ─────────────────────────────────────────────
+
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a new professor (Admin only)' })
+  @ApiResponse({ status: 201, description: 'Professor created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 409, description: 'Email already exists' })
+  create(@Body() dto: CreateProfessorDto) {
+    return this.facultyService.create(dto);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a professor (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Professor updated successfully' })
+  @ApiResponse({ status: 404, description: 'Professor not found' })
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateProfessorDto) {
+    return this.facultyService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete a professor (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Professor deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Professor not found' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.facultyService.remove(id);
   }
 
   // ── Public parameterized endpoint — must come last among GET routes ──
