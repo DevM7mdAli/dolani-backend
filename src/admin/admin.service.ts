@@ -17,6 +17,7 @@ import { UpdateBeaconDto } from './dto/update-beacon.dto';
 import { UpdateBuildingDto } from './dto/update-building.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { UpdateFloorDto } from './dto/update-floor.dto';
+import { UpdateLocationEquipmentDto } from './dto/update-location-equipment.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 
 @Injectable()
@@ -185,6 +186,15 @@ export class AdminService {
     return this.prisma.location.update({
       where: { id },
       data: dto,
+      include: { floor: true, department: true },
+    });
+  }
+
+  async updateLocationEquipment(id: number, dto: UpdateLocationEquipmentDto) {
+    await this.findLocationById(id);
+    return this.prisma.location.update({
+      where: { id },
+      data: { equipment: dto.equipment },
       include: { floor: true, department: true },
     });
   }

@@ -20,6 +20,7 @@ import { UpdateBeaconDto } from './dto/update-beacon.dto';
 import { UpdateBuildingDto } from './dto/update-building.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { UpdateFloorDto } from './dto/update-floor.dto';
+import { UpdateLocationEquipmentDto } from './dto/update-location-equipment.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 
 @ApiTags('Admin')
@@ -156,6 +157,13 @@ export class AdminController {
   @ApiOperation({ summary: 'Update a location' })
   updateLocation(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateLocationDto) {
     return this.adminService.updateLocation(id, dto);
+  }
+
+  @Patch('locations/:id/equipment')
+  @ApiOperation({ summary: 'Update equipment for a location' })
+  @ApiResponse({ status: 200, description: 'Equipment updated' })
+  updateLocationEquipment(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateLocationEquipmentDto) {
+    return this.adminService.updateLocationEquipment(id, dto);
   }
 
   @Delete('locations/:id')

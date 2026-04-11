@@ -140,7 +140,11 @@ export class FacultyService {
     const professor = await this.prisma.professor.findUnique({
       where: { id },
       include: {
-        office: true,
+        office: {
+          include: {
+            floor: { include: { building: true } },
+          },
+        },
         department: true,
         office_hours: { orderBy: { day: 'asc' } },
       },
