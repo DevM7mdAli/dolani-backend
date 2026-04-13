@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -56,7 +56,7 @@ export class OccupancyService implements OnModuleInit {
 
     if (!occupancy) {
       this.logger.warn(`Location ${locationId} not found in occupancy map`);
-      throw new Error(`Location ${locationId} not tracked`);
+      throw new NotFoundException(`Location ${locationId} not tracked`);
     }
 
     // Increment occupancy (don't exceed capacity)
@@ -78,7 +78,7 @@ export class OccupancyService implements OnModuleInit {
 
     if (!occupancy) {
       this.logger.warn(`Location ${locationId} not found in occupancy map`);
-      throw new Error(`Location ${locationId} not tracked`);
+      throw new NotFoundException(`Location ${locationId} not tracked`);
     }
 
     // Decrement occupancy (don't go below 0)
@@ -97,7 +97,7 @@ export class OccupancyService implements OnModuleInit {
     const occupancy = this.occupancyMap.get(locationId);
 
     if (!occupancy) {
-      throw new Error(`Location ${locationId} not tracked`);
+      throw new NotFoundException(`Location ${locationId} not tracked`);
     }
 
     return {
@@ -162,7 +162,7 @@ export class OccupancyService implements OnModuleInit {
     const occupancy = this.occupancyMap.get(locationId);
 
     if (!occupancy) {
-      throw new Error(`Location ${locationId} not tracked`);
+      throw new NotFoundException(`Location ${locationId} not tracked`);
     }
 
     occupancy.current = 0;

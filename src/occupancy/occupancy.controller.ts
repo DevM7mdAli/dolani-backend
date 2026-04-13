@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards } from '@ne
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UpdateOccupancyCountDto } from './dto/update-occupancy-count.dto';
 import { OccupancyService } from './occupancy.service';
 
 @ApiTags('Occupancy')
@@ -17,8 +18,8 @@ export class OccupancyController {
   @ApiOperation({ summary: 'Check in people to a room (increment occupancy)' })
   @ApiResponse({ status: 200, description: 'Occupancy incremented' })
   @ApiResponse({ status: 404, description: 'Location not found' })
-  async checkIn(@Param('id', ParseIntPipe) locationId: number, @Body() body?: { count?: number }) {
-    const count = body?.count || 1;
+  async checkIn(@Param('id', ParseIntPipe) locationId: number, @Body() body: UpdateOccupancyCountDto) {
+    const count = body?.count ?? 1;
     return this.occupancyService.checkIn(locationId, count);
   }
 
@@ -30,8 +31,8 @@ export class OccupancyController {
   @ApiOperation({ summary: 'Check out people from a room (decrement occupancy)' })
   @ApiResponse({ status: 200, description: 'Occupancy decremented' })
   @ApiResponse({ status: 404, description: 'Location not found' })
-  async checkOut(@Param('id', ParseIntPipe) locationId: number, @Body() body?: { count?: number }) {
-    const count = body?.count || 1;
+  async checkOut(@Param('id', ParseIntPipe) locationId: number, @Body() body: UpdateOccupancyCountDto) {
+    const count = body?.count ?? 1;
     return this.occupancyService.checkOut(locationId, count);
   }
 
