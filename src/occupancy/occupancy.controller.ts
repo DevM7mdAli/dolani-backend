@@ -67,16 +67,4 @@ export class OccupancyController {
   async getDashboardData() {
     return this.occupancyService.getAllOccupancyWithDetails();
   }
-
-  /**
-   * Reset occupancy for a room (admin only)
-   */
-  @Post('rooms/:id/reset')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Reset occupancy for a room (admin only)' })
-  @ApiResponse({ status: 200, description: 'Occupancy reset to 0' })
-  @ApiResponse({ status: 404, description: 'Location not found' })
-  async resetOccupancy(@Param('id', ParseIntPipe) locationId: number) {
-    return this.occupancyService.resetOccupancy(locationId);
-  }
 }

@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -59,8 +60,12 @@ export class OccupancyService implements OnModuleInit {
       throw new NotFoundException(`Location ${locationId} not tracked`);
     }
 
-    // Increment occupancy (don't exceed capacity)
-    occupancy.current = Math.min(occupancy.current + count, occupancy.capacity);
+    // Increment occupancy (don't exceed capacity; 0 capacity = unlimited)
+    if (occupancy.capacity > 0) {
+      occupancy.current = Math.min(occupancy.current + count, occupancy.capacity);
+    } else {
+      occupancy.current += count;
+    }
     occupancy.lastUpdated = new Date();
 
     this.logger.log(`Check-in: Location ${locationId} - ${occupancy.current}/${occupancy.capacity}`);
@@ -113,7 +118,8 @@ export class OccupancyService implements OnModuleInit {
    * Get occupancy for all rooms
    */
   async getAllOccupancy() {
-    const result: any[] = [];
+    const result: { locationId: number; current: number; capacity: number; percentage: number; lastUpdated: Date }[] =
+      [];
 
     for (const [locationId, occupancy] of this.occupancyMap) {
       result.push({
@@ -156,20 +162,15 @@ export class OccupancyService implements OnModuleInit {
   }
 
   /**
-   * Reset occupancy for a room (admin function)
+   * Automatically reset all room occupancy counts to 0 every day at midnight.
+   * This reflects real-world building closure at end of day.
    */
-  async resetOccupancy(locationId: number) {
-    const occupancy = this.occupancyMap.get(locationId);
-
-    if (!occupancy) {
-      throw new NotFoundException(`Location ${locationId} not tracked`);
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  resetAllOccupancy() {
+    for (const [, occupancy] of this.occupancyMap) {
+      occupancy.current = 0;
+      occupancy.lastUpdated = new Date();
     }
-
-    occupancy.current = 0;
-    occupancy.lastUpdated = new Date();
-
-    this.logger.log(`Reset occupancy: Location ${locationId}`);
-
-    return occupancy;
+    this.logger.log(`Daily reset: cleared occupancy for ${this.occupancyMap.size} rooms`);
   }
 }
