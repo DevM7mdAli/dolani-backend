@@ -38,17 +38,21 @@ export class NotificationsService implements OnModuleInit {
     }
 
     const tokenList = tokens.map((t) => t.token);
+    const mergedData = data ?? {};
+    const isStopSignal = mergedData['type'] === 'emergency_stop';
 
     const message: admin.messaging.MulticastMessage = {
       tokens: tokenList,
-      notification: { title, body },
-      data: data ?? {},
+      // Data-only for stop signal — triggers background handler silently (no tray notification)
+      // Regular notification for emergency start so it appears even when app is killed
+      ...(isStopSignal ? {} : { notification: { title, body } }),
+      data: mergedData,
       android: {
         priority: 'high',
-        notification: { sound: 'default', channelId: 'emergency' },
+        ...(isStopSignal ? {} : { notification: { sound: 'default', channelId: 'emergency' } }),
       },
       apns: {
-        payload: { aps: { sound: 'default', badge: 1 } },
+        payload: { aps: isStopSignal ? {} : { sound: 'default', badge: 1 } },
       },
     };
 

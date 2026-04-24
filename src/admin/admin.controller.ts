@@ -277,4 +277,17 @@ export class AdminController {
       { type: 'emergency' },
     );
   }
+
+  @Delete('emergency')
+  @Roles(Role.ADMIN, Role.SECURITY)
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Deactivate emergency — silences alarm on all devices' })
+  @ApiResponse({ status: 204, description: 'Deactivation signal sent' })
+  async deactivateEmergency(): Promise<void> {
+    await this.notificationsService.sendToAll(
+      '✅ Emergency Cleared',
+      'The emergency has been deactivated. You may return to normal.',
+      { type: 'emergency_stop' },
+    );
+  }
 }
