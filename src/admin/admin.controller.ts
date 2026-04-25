@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '@prisma/client';
@@ -8,6 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { LocationQueryDto } from '../locations/dto/location-query.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AdminService } from './admin.service';
 import { CreateBeaconDto } from './dto/create-beacon.dto';
 import { CreateBuildingDto } from './dto/create-building.dto';
@@ -29,7 +42,10 @@ import { UpdateLocationDto } from './dto/update-location.dto';
 @Roles(Role.ADMIN)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   // ── Buildings ───────────────────────────────────────────────────────
 
@@ -245,5 +261,33 @@ export class AdminController {
   @ApiResponse({ status: 201, description: 'Graph synced — returns client UUID → server ID mapping' })
   syncGraph(@Body() dto: SyncGraphDto) {
     return this.adminService.syncGraph(dto);
+  }
+
+  // ── Emergency ───────────────────────────────────────────────────────
+
+  @Post('emergency')
+  @Roles(Role.ADMIN, Role.SECURITY)
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Trigger emergency — sends push notification to all devices' })
+  @ApiResponse({ status: 204, description: 'Notification sent' })
+  async triggerEmergency(): Promise<void> {
+    await this.notificationsService.sendToAll(
+      '🚨 Emergency Alert',
+      'An emergency has been declared. Please follow evacuation procedures immediately.',
+      { type: 'emergency' },
+    );
+  }
+
+  @Delete('emergency')
+  @Roles(Role.ADMIN, Role.SECURITY)
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Deactivate emergency — silences alarm on all devices' })
+  @ApiResponse({ status: 204, description: 'Deactivation signal sent' })
+  async deactivateEmergency(): Promise<void> {
+    await this.notificationsService.sendToAll(
+      '✅ Emergency Cleared',
+      'The emergency has been deactivated. You may return to normal.',
+      { type: 'emergency_stop' },
+    );
   }
 }

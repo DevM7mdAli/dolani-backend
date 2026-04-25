@@ -1,7 +1,11 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { Role } from '@prisma/client';
+
+import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { UpdateOccupancyCountDto } from './dto/update-occupancy-count.dto';
 import { OccupancyService } from './occupancy.service';
 
@@ -61,7 +65,8 @@ export class OccupancyController {
    * Get occupancy with location details (for security dashboard)
    */
   @Get('dashboard')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SECURITY)
   @ApiOperation({ summary: 'Get occupancy data for security dashboard (with location details)' })
   @ApiResponse({ status: 200, description: 'All rooms with occupancy and location details' })
   async getDashboardData() {
