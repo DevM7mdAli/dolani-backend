@@ -372,6 +372,7 @@ export class AdminService {
       })),
       beacons: beacons.map((b) => ({
         id: b.id,
+        uuid: b.uuid,
         name: b.name,
         location_id: b.location_id,
         coordinate_x: b.coordinate_x,
@@ -432,6 +433,7 @@ export class AdminService {
         await tx.beacon.create({
           data: {
             name: b.name,
+            uuid: b.uuid ?? null,
             floor_id,
             location_id: locationId,
             coordinate_x: b.coordinate_x,

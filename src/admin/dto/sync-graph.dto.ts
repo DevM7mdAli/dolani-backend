@@ -88,6 +88,11 @@ export class SyncBeaconDto {
   @IsNotEmpty()
   name!: string;
 
+  @ApiPropertyOptional({ example: '0x0000000000000001', description: 'Eddystone instance ID (informational)' })
+  @IsString()
+  @IsOptional()
+  uuid?: string;
+
   @ApiPropertyOptional({ description: 'Client UUID of the linked node' })
   @IsUUID()
   @IsOptional()
