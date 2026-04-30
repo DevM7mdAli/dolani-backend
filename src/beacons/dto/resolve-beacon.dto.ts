@@ -1,11 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class ResolveBeaconDto {
-  @ApiProperty({ example: 'f7826da6-4fa2-4e98-8024-bc5b71e0893e', description: 'BLE beacon UUID' })
+  @ApiProperty({ example: 'CP28-58A0', description: 'BLE beacon local name — unique per device' })
   @IsString()
   @IsNotEmpty()
-  @IsUUID()
-  uuid!: string;
+  name!: string;
 }

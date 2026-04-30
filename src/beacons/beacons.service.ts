@@ -19,10 +19,10 @@ export class BeaconsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Resolve a beacon UUID to its associated Location */
-  async resolveToLocation(uuid: string) {
+  /** Resolve a beacon by its local name to its associated Location */
+  async resolveToLocation(name: string) {
     const beacon = await this.prisma.beacon.findUnique({
-      where: { uuid },
+      where: { name },
       include: {
         location: {
           include: { floor: true, department: true },
@@ -31,11 +31,11 @@ export class BeaconsService {
     });
 
     if (!beacon) {
-      throw new NotFoundException(`Beacon with UUID "${uuid}" not found`);
+      throw new NotFoundException(`Beacon "${name}" not found`);
     }
 
     if (!beacon.operating) {
-      this.logger.warn(`Beacon ${uuid} is marked as non-operating`);
+      this.logger.warn(`Beacon ${name} is marked as non-operating`);
     }
 
     return {
@@ -47,13 +47,13 @@ export class BeaconsService {
   }
 
   /** Ingest an RSSI reading: persist to DB and update in-memory WMA window */
-  async ingestRssi(beaconUuid: string, rssi: number) {
+  async ingestRssi(beaconName: string, rssi: number) {
     const beacon = await this.prisma.beacon.findUnique({
-      where: { uuid: beaconUuid },
+      where: { name: beaconName },
     });
 
     if (!beacon) {
-      throw new NotFoundException(`Beacon with UUID "${beaconUuid}" not found`);
+      throw new NotFoundException(`Beacon "${beaconName}" not found`);
     }
 
     // Persist reading and increment signal count

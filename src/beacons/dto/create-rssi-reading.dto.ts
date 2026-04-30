@@ -1,13 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { IsInt, IsNotEmpty, IsString, IsUUID, Max, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsString, Max, Min } from 'class-validator';
 
 export class CreateRssiReadingDto {
-  @ApiProperty({ example: 'f7826da6-4fa2-4e98-8024-bc5b71e0893e', description: 'Beacon UUID' })
+  @ApiProperty({ example: 'CP28-58A0', description: 'BLE beacon local name — unique per device' })
   @IsString()
   @IsNotEmpty()
-  @IsUUID()
-  beaconUuid!: string;
+  beaconName!: string;
 
   @ApiProperty({ example: -67, description: 'RSSI value in dBm (typically -100 to 0)' })
   @IsInt()

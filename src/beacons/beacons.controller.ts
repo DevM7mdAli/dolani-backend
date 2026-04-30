@@ -21,7 +21,7 @@ export class BeaconsController {
   @ApiResponse({ status: 200, description: 'Returns the location associated with the beacon' })
   @ApiResponse({ status: 404, description: 'Beacon not found' })
   resolve(@Body() dto: ResolveBeaconDto) {
-    return this.beaconsService.resolveToLocation(dto.uuid);
+    return this.beaconsService.resolveToLocation(dto.name);
   }
 
   @Post('rssi')
@@ -29,7 +29,7 @@ export class BeaconsController {
   @ApiResponse({ status: 201, description: 'Reading ingested, returns smoothed RSSI value' })
   @ApiResponse({ status: 404, description: 'Beacon not found' })
   ingestRssi(@Body() dto: CreateRssiReadingDto) {
-    return this.beaconsService.ingestRssi(dto.beaconUuid, dto.rssi);
+    return this.beaconsService.ingestRssi(dto.beaconName, dto.rssi);
   }
 
   @Get()
