@@ -182,6 +182,29 @@ export class NavigationService implements OnModuleInit {
     return nearest;
   }
 
+  /** Find the nearest navigable node to given coordinates (e.g. from beacon signal) */
+  findNearestNode(x: number, y: number, floorId?: number): GraphNode | null {
+    let nearest: GraphNode | null = null;
+    let minDist = Infinity;
+
+    for (const node of this.nodes.values()) {
+      // Filter by floor if specified
+      if (floorId && node.floorId !== floorId) continue;
+
+      // Calculate Euclidean distance
+      const dx = node.x - x;
+      const dy = node.y - y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < minDist) {
+        minDist = dist;
+        nearest = node;
+      }
+    }
+
+    return nearest;
+  }
+
   /** Reconstruct path from cameFrom map */
   private reconstructPath(cameFrom: Map<number, number>, currentId: number, totalDistance: number): PathResult {
     const path: GraphNode[] = [];
