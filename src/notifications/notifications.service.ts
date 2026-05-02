@@ -1,7 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 import * as admin from 'firebase-admin';
-import * as path from 'path';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -13,10 +12,17 @@ export class NotificationsService implements OnModuleInit {
 
   onModuleInit() {
     if (!admin.apps.length) {
+      const serviceAccount = {
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/gm, '\n'),
+        privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID,
+      } as admin.ServiceAccount;
+
       admin.initializeApp({
-        credential: admin.credential.cert(path.resolve(process.cwd(), 'firebase-service-account.json')),
+        credential: admin.credential.cert(serviceAccount),
       });
-      this.logger.log('Firebase Admin initialized');
+      this.logger.log('Firebase Admin initialized via environment variables');
     }
   }
 
