@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import * as admin from 'firebase-admin';
 
@@ -8,22 +9,47 @@ import { PrismaService } from '../prisma/prisma.service';
 export class NotificationsService implements OnModuleInit {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   onModuleInit() {
-    if (!admin.apps.length) {
-      const serviceAccount = {
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/gm, '\n'),
-        privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID,
-      } as admin.ServiceAccount;
+    if (admin.apps.length) return;
+
+    try {
+      const serviceAccount = this.resolveServiceAccount();
+
+      if (!serviceAccount) {
+        this.logger.warn('Firebase Admin not initialized: missing service account credentials');
+        return;
+      }
 
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
-      this.logger.log('Firebase Admin initialized via environment variables');
+      this.logger.log('Firebase Admin initialized');
+    } catch (error) {
+      this.logger.error('Firebase Admin initialization failed', error instanceof Error ? error.stack : String(error));
     }
+  }
+
+  private resolveServiceAccount(): admin.ServiceAccount | null {
+    const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID');
+    const clientEmail = this.configService.get<string>('FIREBASE_CLIENT_EMAIL');
+    const privateKey = this.configService.get<string>('FIREBASE_PRIVATE_KEY')?.replace(/\\n/gm, '\n');
+    const privateKeyId = this.configService.get<string>('FIREBASE_PRIVATE_KEY_ID');
+
+    if (!projectId || !clientEmail || !privateKey) {
+      return null;
+    }
+
+    return {
+      projectId,
+      clientEmail,
+      privateKey,
+      ...(privateKeyId ? { privateKeyId } : {}),
+    };
   }
 
   async registerToken(token: string): Promise<void> {
