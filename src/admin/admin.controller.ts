@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '@prisma/client';
@@ -7,6 +19,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { LocationQueryDto } from '../locations/dto/location-query.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AdminService } from './admin.service';
 import { CreateBeaconDto } from './dto/create-beacon.dto';
 import { CreateBuildingDto } from './dto/create-building.dto';
@@ -19,6 +33,7 @@ import { UpdateBeaconDto } from './dto/update-beacon.dto';
 import { UpdateBuildingDto } from './dto/update-building.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { UpdateFloorDto } from './dto/update-floor.dto';
+import { UpdateLocationEquipmentDto } from './dto/update-location-equipment.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 
 @ApiTags('Admin')
@@ -27,7 +42,10 @@ import { UpdateLocationDto } from './dto/update-location.dto';
 @Roles(Role.ADMIN)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   // ── Buildings ───────────────────────────────────────────────────────
 
@@ -140,10 +158,9 @@ export class AdminController {
   }
 
   @Get('locations')
-  @ApiOperation({ summary: 'List locations with pagination and optional floor filter' })
-  @ApiQuery({ name: 'floorId', required: false, type: Number })
-  findAllLocations(@Query() query: PaginationQueryDto, @Query('floorId') floorId?: string) {
-    return this.adminService.findAllLocations(query, floorId ? +floorId : undefined);
+  @ApiOperation({ summary: 'List locations with pagination and optional filters' })
+  findAllLocations(@Query() query: LocationQueryDto) {
+    return this.adminService.findAllLocations(query);
   }
 
   @Get('locations/:id')
@@ -156,6 +173,13 @@ export class AdminController {
   @ApiOperation({ summary: 'Update a location' })
   updateLocation(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateLocationDto) {
     return this.adminService.updateLocation(id, dto);
+  }
+
+  @Patch('locations/:id/equipment')
+  @ApiOperation({ summary: 'Update equipment for a location' })
+  @ApiResponse({ status: 200, description: 'Equipment updated' })
+  updateLocationEquipment(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateLocationEquipmentDto) {
+    return this.adminService.updateLocationEquipment(id, dto);
   }
 
   @Delete('locations/:id')
@@ -237,5 +261,33 @@ export class AdminController {
   @ApiResponse({ status: 201, description: 'Graph synced — returns client UUID → server ID mapping' })
   syncGraph(@Body() dto: SyncGraphDto) {
     return this.adminService.syncGraph(dto);
+  }
+
+  // ── Emergency ───────────────────────────────────────────────────────
+
+  @Post('emergency')
+  @Roles(Role.ADMIN, Role.SECURITY)
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Trigger emergency — sends push notification to all devices' })
+  @ApiResponse({ status: 204, description: 'Notification sent' })
+  async triggerEmergency(): Promise<void> {
+    await this.notificationsService.sendToAll(
+      '🚨 Emergency Alert',
+      'An emergency has been declared. Please follow evacuation procedures immediately.',
+      { type: 'emergency' },
+    );
+  }
+
+  @Delete('emergency')
+  @Roles(Role.ADMIN, Role.SECURITY)
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Deactivate emergency — silences alarm on all devices' })
+  @ApiResponse({ status: 204, description: 'Deactivation signal sent' })
+  async deactivateEmergency(): Promise<void> {
+    await this.notificationsService.sendToAll(
+      '✅ Emergency Cleared',
+      'The emergency has been deactivated. You may return to normal.',
+      { type: 'emergency_stop' },
+    );
   }
 }

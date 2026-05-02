@@ -1,11 +1,14 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { Prisma, ProfessorStatus, ReportCategory, ReportStatus } from '@prisma/client';
 
 import { PaginatedResult, PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateProfessorDto } from './dto/create-professor.dto';
 import { CreateReportDto } from './dto/create-report.dto';
+import { FacultyQueryDto } from './dto/faculty-query.dto';
 import { UpdateOfficeHoursDto } from './dto/update-office-hours.dto';
+import { UpdateProfessorDto } from './dto/update-professor.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { UpsertScheduleDto } from './dto/upsert-schedule.dto';
 
@@ -89,7 +92,7 @@ export class FacultyService {
 
   /** List professors with pagination, optional department and status filters */
   async findAll(
-    query: PaginationQueryDto,
+    query: FacultyQueryDto,
     departmentId?: number,
     status?: ProfessorStatus,
   ): Promise<PaginatedResult<unknown>> {
@@ -137,7 +140,11 @@ export class FacultyService {
     const professor = await this.prisma.professor.findUnique({
       where: { id },
       include: {
-        office: true,
+        office: {
+          include: {
+            floor: { include: { building: true } },
+          },
+        },
         department: true,
         office_hours: { orderBy: { day: 'asc' } },
       },
@@ -148,6 +155,155 @@ export class FacultyService {
     }
 
     return professor;
+  }
+
+  /** Create a new professor (Admin only) */
+  async create(dto: CreateProfessorDto) {
+    try {
+      // Verify department exists
+      const department = await this.prisma.department.findUnique({
+        where: { id: dto.department_id },
+      });
+
+      if (!department) {
+        throw new NotFoundException(`Department with ID ${dto.department_id} not found`);
+      }
+
+      // Verify office location exists if provided
+      if (dto.location_id) {
+        const location = await this.prisma.location.findUnique({
+          where: { id: dto.location_id },
+        });
+
+        if (!location) {
+          throw new NotFoundException(`Location with ID ${dto.location_id} not found`);
+        }
+      }
+
+      let userId = dto.user_id;
+
+      // If user_id not provided, create a system user
+      if (!userId) {
+        // Extract username from email (part before @)
+        const username = dto.email.split('@')[0];
+
+        const newUser = await this.prisma.user.create({
+          data: {
+            email: dto.email,
+            username: `${username}_${Date.now()}`, // Make unique
+            name: dto.full_name,
+            password_hash: '', // Empty hash - admin must reset password
+            role: 'FACULTY',
+          },
+        });
+        userId = newUser.id;
+      } else {
+        // Verify user exists if user_id provided
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+        });
+
+        if (!user) {
+          throw new NotFoundException(`User with ID ${userId} not found`);
+        }
+      }
+
+      // Create professor
+      const professor = await this.prisma.professor.create({
+        data: {
+          full_name: dto.full_name,
+          email: dto.email,
+          phone_number: dto.phone_number,
+          show_phone: dto.show_phone || false,
+          department_id: dto.department_id,
+          location_id: dto.location_id || null,
+          user_id: userId,
+        },
+        include: {
+          office: true,
+          department: true,
+        },
+      });
+
+      return professor;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          const field = (error.meta?.target as string[])?.[0] || 'field';
+          throw new ConflictException(`${field} already exists`);
+        }
+      }
+      throw error;
+    }
+  }
+
+  /** Update a professor (Admin only) */
+  async update(id: number, dto: UpdateProfessorDto) {
+    // Verify professor exists
+    await this.findOne(id);
+
+    try {
+      // Verify department exists if updating department
+      if (dto.department_id) {
+        const department = await this.prisma.department.findUnique({
+          where: { id: dto.department_id },
+        });
+
+        if (!department) {
+          throw new NotFoundException(`Department with ID ${dto.department_id} not found`);
+        }
+      }
+
+      // Verify office location exists if updating location
+      if (dto.location_id !== undefined && dto.location_id !== null) {
+        const location = await this.prisma.location.findUnique({
+          where: { id: dto.location_id },
+        });
+
+        if (!location) {
+          throw new NotFoundException(`Location with ID ${dto.location_id} not found`);
+        }
+      }
+
+      const professor = await this.prisma.professor.update({
+        where: { id },
+        data: {
+          ...(dto.full_name && { full_name: dto.full_name }),
+          ...(dto.email && { email: dto.email }),
+          ...(dto.phone_number !== undefined && { phone_number: dto.phone_number }),
+          ...(dto.show_phone !== undefined && { show_phone: dto.show_phone }),
+          ...(dto.department_id && { department_id: dto.department_id }),
+          ...(dto.location_id !== undefined && { location_id: dto.location_id }),
+        },
+        include: {
+          office: true,
+          department: true,
+        },
+      });
+
+      return professor;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          const field = (error.meta?.target as string[])?.[0] || 'field';
+          throw new ConflictException(`${field} already exists`);
+        }
+      }
+      throw error;
+    }
+  }
+
+  /** Delete a professor (Admin only) */
+  async remove(id: number) {
+    // Verify professor exists
+    const professor = await this.findOne(id);
+
+    // Delete professor (cascades to user via onDelete: Cascade)
+    await this.prisma.professor.delete({
+      where: { id },
+    });
+
+    return { message: `Professor ${professor.full_name} deleted successfully` };
   }
 
   /** Search professors by name (public) */

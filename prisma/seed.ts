@@ -474,6 +474,27 @@ function getDepartmentType(arabicName: string): DeptType {
   }
 }
 
+function getCapacity(type: LocationType): number {
+  switch (type) {
+    case LocationType.THEATER:
+      return 200;
+    case LocationType.CLASSROOM:
+      return 30;
+    case LocationType.LAB:
+      return 25;
+    case LocationType.CONFERENCE:
+      return 20;
+    case LocationType.MAIN_HALL:
+      return 100;
+    case LocationType.OFFICE:
+      return 4;
+    case LocationType.PRAYER_ROOM:
+      return 50;
+    default:
+      return 0;
+  }
+}
+
 function getLocationType(arabicType: string | undefined, hasDoctor: boolean): LocationType {
   if (hasDoctor) return LocationType.OFFICE;
 
@@ -698,6 +719,7 @@ async function main() {
         type: type,
         floor_id: floorId,
         department_id: deptId,
+        capacity: getCapacity(type),
         coordinate_x: Math.random() * 1,
         coordinate_y: Math.random() * 1,
         equipment: getEquipment(type),
