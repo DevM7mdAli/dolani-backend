@@ -15,8 +15,18 @@ export class NavigationController {
   @ApiResponse({ status: 200, description: 'Returns the shortest path with waypoints and total distance' })
   @ApiResponse({ status: 404, description: 'No path found between the two locations' })
   navigate(@Body() dto: NavigateDto) {
+    // If beacon coordinates are provided, find the nearest node automatically
+    let startLocationId = dto.startLocationId;
+    if (dto.startX !== undefined && dto.startY !== undefined) {
+      const nearestNode = this.navigationService.findNearestNode(dto.startX, dto.startY, dto.startFloorId);
+      if (!nearestNode) {
+        throw new NotFoundException('No navigable node found near the provided coordinates');
+      }
+      startLocationId = nearestNode.id;
+    }
+
     const result = this.navigationService.navigate(
-      dto.startLocationId,
+      startLocationId,
       dto.endLocationId,
       dto.emergency ?? false,
       dto.avoidStairs ?? false,

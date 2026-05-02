@@ -80,7 +80,46 @@ export class NavigationService implements OnModuleInit {
       });
     }
 
-    this.logger.log(`Graph built: ${this.nodes.size} nodes, ${paths.length} edges`);
+    // Auto-link vertical transitions (Stairs to Stairs, Elevator to Elevator across floors)
+    const verticalNodes = Array.from(this.nodes.values()).filter(
+      (n) => n.type === LocationType.STAIRS || n.type === LocationType.ELEVATOR,
+    );
+
+    let verticalEdgesAdded = 0;
+    for (let i = 0; i < verticalNodes.length; i++) {
+      for (let j = i + 1; j < verticalNodes.length; j++) {
+        const a = verticalNodes[i];
+        const b = verticalNodes[j];
+
+        // Connect if they are the same type, on different floors, and are horizontally aligned (same physical staircase)
+        if (a.type === b.type && a.floorId !== b.floorId) {
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const horizontalDist = Math.sqrt(dx * dx + dy * dy);
+
+          // Normalized coordinates are 0 to 1. A distance of < 0.05 means they are within 5% of each other's position
+          // This prevents cross-connecting "Stair 1" on Floor 1 with "Stair 3" on Floor 2 if they share a generic name.
+          if (horizontalDist < 0.05) {
+            const verticalDistance = Math.abs(a.floorNumber - b.floorNumber) * 5.0; // Arbitrary 5m per floor
+            this.adjacency.get(a.id)?.push({
+              targetId: b.id,
+              distance: verticalDistance,
+              isAccessible: true,
+            });
+            this.adjacency.get(b.id)?.push({
+              targetId: a.id,
+              distance: verticalDistance,
+              isAccessible: true,
+            });
+            verticalEdgesAdded += 2;
+          }
+        }
+      }
+    }
+
+    this.logger.log(
+      `Graph built: ${this.nodes.size} nodes, ${paths.length} edges, ${verticalEdgesAdded} vertical connections`,
+    );
   }
 
   /** Euclidean distance heuristic for A* */
@@ -176,6 +215,29 @@ export class NavigationService implements OnModuleInit {
           minDist = dist;
           nearest = node;
         }
+      }
+    }
+
+    return nearest;
+  }
+
+  /** Find the nearest navigable node to given coordinates (e.g. from beacon signal) */
+  findNearestNode(x: number, y: number, floorId?: number): GraphNode | null {
+    let nearest: GraphNode | null = null;
+    let minDist = Infinity;
+
+    for (const node of this.nodes.values()) {
+      // Filter by floor if specified
+      if (floorId && node.floorId !== floorId) continue;
+
+      // Calculate Euclidean distance
+      const dx = node.x - x;
+      const dy = node.y - y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < minDist) {
+        minDist = dist;
+        nearest = node;
       }
     }
 

@@ -17,6 +17,8 @@ export class LocationsService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.LocationWhereInput = {
+      // Never expose internal navigation waypoints in public search
+      NOT: { type: { in: ['CORRIDOR', 'STAIRS'] } },
       ...(type ? { type } : {}),
       ...(floorId ? { floor_id: floorId } : {}),
       ...(buildingId ? { floor: { building_id: buildingId } } : {}),
