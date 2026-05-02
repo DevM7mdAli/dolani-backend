@@ -3,6 +3,26 @@
 import 'dotenv/config';
 import { defineConfig } from 'prisma/config';
 
+const rawDatabaseUrl = process.env['DATABASE_URL'] ?? '';
+const targetSchema = process.env['DB_SCHEMA'] ?? 'dolani_api';
+
+function withSchema(url: string, schema: string): string {
+  if (!url) {
+    return url;
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (!parsed.searchParams.has('schema')) {
+      parsed.searchParams.set('schema', schema);
+    }
+    return parsed.toString();
+  } catch {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}schema=${encodeURIComponent(schema)}`;
+  }
+}
+
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
@@ -10,6 +30,6 @@ export default defineConfig({
     seed: 'npx ts-node prisma/seed.ts',
   },
   datasource: {
-    url: process.env['DATABASE_URL'],
+    url: withSchema(rawDatabaseUrl, targetSchema),
   },
 });
