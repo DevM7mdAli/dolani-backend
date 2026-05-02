@@ -1,18 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString } from 'class-validator';
 
 export class CreateBeaconDto {
-  @ApiProperty({ example: 'f7826da6-4fa2-4e98-8024-bc5b71e0893e' })
+  @ApiProperty({ example: 'CP28-58A0', description: 'BLE beacon local name — unique per device' })
   @IsString()
   @IsNotEmpty()
-  @IsUUID()
-  uuid!: string;
+  name!: string;
 
-  @ApiPropertyOptional({ example: 'Beacon Floor-1 Hall', description: 'Optional label for the beacon' })
+  @ApiPropertyOptional({ example: 'e5a4a7e5a48f31323334', description: 'Eddystone namespace/UUID (optional)' })
   @IsString()
   @IsOptional()
-  name?: string;
+  uuid?: string;
 
   @ApiPropertyOptional({ example: true, default: true })
   @IsBoolean()

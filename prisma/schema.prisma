@@ -192,8 +192,8 @@ model Path {
 
 model Beacon {
   id           Int     @id @default(autoincrement())
-  uuid         String  @unique
-  name         String?
+  uuid         String?
+  name         String  @unique
   operating    Boolean @default(true)
   signal_count Int     @default(0)
 

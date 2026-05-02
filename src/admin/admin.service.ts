@@ -250,8 +250,8 @@ export class AdminService {
     return this.prisma.beacon
       .create({
         data: {
-          uuid: dto.uuid,
           name: dto.name,
+          uuid: dto.uuid,
           operating: dto.operating ?? true,
           location_id: dto.location_id,
           floor_id: dto.floor_id,
@@ -261,7 +261,7 @@ export class AdminService {
         },
         include: { location: true, floor: true, department: true },
       })
-      .catch(this.handleUniqueError('Beacon UUID'));
+      .catch(this.handleUniqueError('Beacon name'));
   }
 
   async findAllBeacons(query: PaginationQueryDto, locationId?: number) {
@@ -432,8 +432,8 @@ export class AdminService {
         if (locationId == null) continue; // beacon must link to a location
         await tx.beacon.create({
           data: {
-            uuid: b.uuid,
             name: b.name,
+            uuid: b.uuid ?? null,
             floor_id,
             location_id: locationId,
             coordinate_x: b.coordinate_x,

@@ -83,14 +83,15 @@ export class SyncBeaconDto {
   @IsUUID()
   client_id!: string;
 
-  @ApiProperty({ example: 'f7826da6-4fa2-4e98-8024-bc5b71e0893e' })
+  @ApiProperty({ example: 'CP28-58A0', description: 'BLE beacon local name — unique per device' })
   @IsString()
   @IsNotEmpty()
-  uuid!: string;
-
-  @ApiProperty({ example: 'Beacon Hall-1' })
-  @IsString()
   name!: string;
+
+  @ApiPropertyOptional({ example: '0x0000000000000001', description: 'Eddystone instance ID (informational)' })
+  @IsString()
+  @IsOptional()
+  uuid?: string;
 
   @ApiPropertyOptional({ description: 'Client UUID of the linked node' })
   @IsUUID()
