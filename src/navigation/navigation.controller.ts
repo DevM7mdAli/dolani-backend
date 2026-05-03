@@ -30,6 +30,7 @@ export class NavigationController {
       dto.endLocationId,
       dto.emergency ?? false,
       dto.avoidStairs ?? false,
+      dto.avoidElevators ?? false,
     );
 
     if (!result) {

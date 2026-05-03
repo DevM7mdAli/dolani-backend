@@ -53,4 +53,12 @@ export class NavigateDto {
   @IsBoolean()
   @IsOptional()
   avoidStairs?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'When true, exclude ELEVATOR nodes from pathfinding (accessibility)',
+  })
+  @IsBoolean()
+  @IsOptional()
+  avoidElevators?: boolean;
 }

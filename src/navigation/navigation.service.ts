@@ -133,10 +133,17 @@ export class NavigationService implements OnModuleInit {
    * A* pathfinding algorithm.
    * @param startId     Start location ID
    * @param endId       End location ID
-   * @param emergency   If true, exclude ELEVATOR nodes and route to nearest EXIT
-   * @param avoidStairs If true, exclude STAIRS nodes (accessibility)
+   * @param emergency      If true, exclude ELEVATOR nodes and route to nearest EXIT
+   * @param avoidStairs    If true, exclude STAIRS nodes (accessibility)
+   * @param avoidElevators If true, exclude ELEVATOR nodes (accessibility)
    */
-  navigate(startId: number, endId: number, emergency = false, avoidStairs = false): PathResult | null {
+  navigate(
+    startId: number,
+    endId: number,
+    emergency = false,
+    avoidStairs = false,
+    avoidElevators = false,
+  ): PathResult | null {
     const start = this.nodes.get(startId);
     if (!start) return null;
 
@@ -185,6 +192,9 @@ export class NavigationService implements OnModuleInit {
 
         // In emergency mode, skip ELEVATOR nodes
         if (emergency && neighbor.type === LocationType.ELEVATOR) continue;
+
+        // Accessibility: skip ELEVATOR nodes
+        if (avoidElevators && neighbor.type === LocationType.ELEVATOR) continue;
 
         // Accessibility: skip STAIRS nodes or inaccessible edges
         if (avoidStairs && (neighbor.type === LocationType.STAIRS || !edge.isAccessible)) continue;
